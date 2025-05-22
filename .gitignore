@@ -1,0 +1,33 @@
+# Deno
+.deno_cache/
+deno.lock
+
+# IDEs
+.vscode/
+.idea/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Dependency directories
+node_modules/
+jspm_packages/
+web_modules/
+
+# Build output
+dist/
+build/
+
+src/tools/server/*
+
+.env
+config
