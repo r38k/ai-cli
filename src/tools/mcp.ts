@@ -11,29 +11,42 @@ const mcpServerConfigSchema = z.object({
     }))
 });
 
-const MCP_SERVER_CONFIG_PATH = path.resolve(Deno.env.get("MCP_CONFIG_PATH") || "");
+const MCP_SERVER_CONFIG_PATH = Deno.env.get("MCP_CONFIG_PATH");
 
 export async function configureMCPClient(): Promise<Client[]> {
-    const configResult = mcpServerConfigSchema.safeParse(JSON.parse(await Deno.readTextFile(MCP_SERVER_CONFIG_PATH)));
-
-    if (!configResult.success) {
-        console.error("Invalid MCP server configuration");
+    if (!MCP_SERVER_CONFIG_PATH) {
+        console.error("MCP_CONFIG_PATH環境変数が設定されていません");
         return [];
     }
 
-    const mcpClientList: Client[] = [];
-    for (const [_, config] of Object.entries(configResult.data.mcpServer)) {
-        const client = new Client({
-            name: "mcp-client",
-            version: "0.1.0",
-        });
+    const resolvedPath = path.resolve(MCP_SERVER_CONFIG_PATH);
+    
+    try {
+        const configData = await Deno.readTextFile(resolvedPath);
+        const configResult = mcpServerConfigSchema.safeParse(JSON.parse(configData));
 
-        const transport = new StdioClientTransport(config);
+        if (!configResult.success) {
+            console.error("Invalid MCP server configuration");
+            return [];
+        }
 
-        await client.connect(transport);
+        const mcpClientList: Client[] = [];
+        for (const [_, config] of Object.entries(configResult.data.mcpServer)) {
+            const client = new Client({
+                name: "mcp-client",
+                version: "0.1.0",
+            });
 
-        mcpClientList.push(client);
+            const transport = new StdioClientTransport(config);
+
+            await client.connect(transport);
+
+            mcpClientList.push(client);
+        }
+
+        return mcpClientList;
+    } catch (error) {
+        console.error(`MCPサーバー設定ファイルの読み込みエラー: ${error instanceof Error ? error.message : String(error)}`);
+        return [];
     }
-
-    return mcpClientList;
 }
