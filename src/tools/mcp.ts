@@ -2,6 +2,7 @@ import path from "node:path";
 import { z } from "zod";
 import { Client } from "npm:@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "npm:@modelcontextprotocol/sdk/client/stdio.js";
+import { getMcpConfigPath } from "../core/auth.ts";
 
 const mcpServerConfigSchema = z.object({
   mcpServer: z.record(z.object({
@@ -11,15 +12,9 @@ const mcpServerConfigSchema = z.object({
   })),
 });
 
-const MCP_SERVER_CONFIG_PATH = Deno.env.get("MCP_CONFIG_PATH");
-
 export async function configureMCPClient(): Promise<Client[]> {
-  if (!MCP_SERVER_CONFIG_PATH) {
-    console.error("MCP_CONFIG_PATH環境変数が設定されていません");
-    return [];
-  }
-
-  const resolvedPath = path.resolve(MCP_SERVER_CONFIG_PATH);
+  const configPath = getMcpConfigPath();
+  const resolvedPath = path.resolve(configPath);
 
   try {
     const configData = await Deno.readTextFile(resolvedPath);
@@ -28,7 +23,7 @@ export async function configureMCPClient(): Promise<Client[]> {
     );
 
     if (!configResult.success) {
-      console.error("Invalid MCP server configuration");
+      console.error("MCPサーバー設定が無効です");
       return [];
     }
 
@@ -57,6 +52,10 @@ export async function configureMCPClient(): Promise<Client[]> {
 
     return mcpClientList;
   } catch (error) {
+    // ファイルが存在しない場合は空の配列を返す（エラーメッセージは表示しない）
+    if (error instanceof Deno.errors.NotFound) {
+      return [];
+    }
     console.error(
       `MCPサーバー設定ファイルの読み込みエラー: ${
         error instanceof Error ? error.message : String(error)

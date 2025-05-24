@@ -1,3 +1,4 @@
+// 必要な権限: --allow-read (ファイル読み込みのため)
 import {
   assertEquals,
   assertRejects,

@@ -1,4 +1,4 @@
-// 必要な権限: --allow-read (ファイル読み込みのため)
+// 必要な権限: --allow-read (ファイル読み込みと設定ファイル読み込みのため)
 import { type ParsedArgs } from "./parser.ts";
 import { formatInputContent, readFiles, readStdin } from "./input.ts";
 import { assertEquals } from "https://deno.land/std@0.208.0/assert/mod.ts";
@@ -29,6 +29,11 @@ export interface ExecutionContext {
 export async function createExecutionContext(
   args: ParsedArgs,
 ): Promise<ExecutionContext> {
+  // authモードとmcpモードは処理しない（型エラー回避）
+  if (args.mode === "auth" || args.mode === "mcp") {
+    throw new Error("Auth and MCP modes should be handled before creating execution context");
+  }
+
   // 標準入力を読み取る
   const stdinContent = await readStdin();
 
@@ -39,7 +44,7 @@ export async function createExecutionContext(
   const inputContent = formatInputContent(fileContents, stdinContent);
 
   return {
-    mode: args.mode,
+    mode: args.mode as "interactive" | "oneshot",
     prompt: args.prompt,
     inputContent,
     options: args.options,

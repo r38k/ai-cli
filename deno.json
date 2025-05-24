@@ -1,7 +1,7 @@
 {
   "tasks": {
     "dev": "deno run --watch src/index.ts",
-    "build": "deno compile --allow-read --allow-env --allow-run --allow-net --allow-sys -o ai src/index.ts && chmod +x ai",
+    "build": "deno compile --allow-read --allow-env --allow-run --allow-net --allow-sys --allow-write -o bin/ai src/index.ts && chmod +x bin/ai",
     "run": "run --allow-read --allow-env --allow-run --allow-net --allow-sys src/index.ts --tools"
   },
   "imports": {

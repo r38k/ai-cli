@@ -1,6 +1,7 @@
 // 必要な権限:
-// --allow-env   # カラー出力の検出とMCP設定読み込みのため
-// --allow-read  # ファイル読み込みとMCP設定読み込みのため
+// --allow-env   # カラー出力の検出と開発モードでの環境変数読み込みのため
+// --allow-read  # ファイル読み込みと設定ファイル読み込みのため
+// --allow-write # 認証情報とMCP設定ファイルの書き込みのため
 // --allow-net   # Gemini APIアクセスのため
 // --allow-run   # MCPサーバープロセスの起動のため
 
@@ -27,6 +28,8 @@ import {
   buildWorkingDirectoryContext,
   DEFAULT_SYSTEM_PROMPT,
 } from "./core/prompts.ts";
+import { runAuth } from "./cli/auth.ts";
+import { addMcpServer, listMcpServers, removeMcpServer, showMcpHelp } from "./cli/mcp.ts";
 
 /**
  * インタラクティブモードの実行
@@ -226,6 +229,32 @@ async function main() {
     // ヘルプ表示
     if (args.options.help) {
       showHelp();
+      return;
+    }
+
+    // authコマンドの処理
+    if (args.mode === "auth") {
+      await runAuth();
+      return;
+    }
+
+    // mcpコマンドの処理
+    if (args.mode === "mcp") {
+      switch (args.mcpSubcommand) {
+        case "add":
+          await addMcpServer();
+          break;
+        case "list":
+          await listMcpServers();
+          break;
+        case "remove":
+          await removeMcpServer();
+          break;
+        case "help":
+        default:
+          showMcpHelp();
+          break;
+      }
       return;
     }
 

@@ -7,6 +7,7 @@ import {
 } from "@google/genai";
 import { Client } from "npm:@modelcontextprotocol/sdk/client/index.js";
 import { getDefaultModel } from "./model.ts";
+import { getApiKey } from "../core/auth.ts";
 
 export interface GenerateTextOptions {
   model?: string;
@@ -26,8 +27,13 @@ export async function* generateText(
     toolResult?: { name: string; result: unknown };
   }
 > {
+  const apiKey = await getApiKey();
+  if (!apiKey) {
+    throw new Error("APIキーが設定されていません。'ai auth' コマンドで認証してください。");
+  }
+
   const client = new GoogleGenAI({
-    apiKey: Deno.env.get("GEMINI_API_KEY"),
+    apiKey: apiKey,
   });
 
   // Build config with conditional tools
@@ -37,7 +43,11 @@ export async function* generateText(
 
   // Only add tools configuration if MCP clients are provided
   if (mcp.length > 0) {
-    config.tools = [mcpToTool(...mcp, {})];
+    config.tools = [mcpToTool(...mcp, {}), {
+      codeExecution: {}
+    }, {
+      googleSearch: {}
+    }];
     config.toolConfig = {
       functionCallingConfig: {
         mode: FunctionCallingConfigMode.AUTO,

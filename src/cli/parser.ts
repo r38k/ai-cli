@@ -1,4 +1,4 @@
-// 必要な権限: --allow-env (Kleurのカラー検出のため)
+// 必要な権限: --allow-env (Kleurのカラー検出と開発モードでの環境変数読み込みのため)
 import { parseArgs as nodeParseArgs } from "node:util";
 import { assertEquals } from "https://deno.land/std@0.208.0/assert/mod.ts";
 import { getDefaultModel } from "../api/model.ts";
@@ -6,7 +6,7 @@ import { getDefaultModel } from "../api/model.ts";
 /**
  * 実行モード
  */
-export type ExecutionMode = "interactive" | "oneshot";
+export type ExecutionMode = "interactive" | "oneshot" | "auth" | "mcp";
 
 /**
  * パース結果
@@ -15,6 +15,7 @@ export interface ParsedArgs {
   mode: ExecutionMode;
   prompt?: string;
   files: string[];
+  mcpSubcommand?: string;
   options: {
     help: boolean;
     model: string;
@@ -29,6 +30,37 @@ export interface ParsedArgs {
  * コマンドライン引数をパース (node:util.parseArgs使用)
  */
 export function parseArgs(args: string[]): ParsedArgs {
+  // authコマンドの特別処理
+  if (args.length > 0 && args[0] === "auth") {
+    return {
+      mode: "auth",
+      files: [],
+      options: {
+        help: false,
+        model: getDefaultModel(),
+        maxTokens: 1000,
+        verbose: false,
+        tools: false,
+      },
+    };
+  }
+
+  // mcpコマンドの特別処理
+  if (args.length > 0 && args[0] === "mcp") {
+    return {
+      mode: "mcp",
+      files: [],
+      mcpSubcommand: args[1] || "help",
+      options: {
+        help: false,
+        model: getDefaultModel(),
+        maxTokens: 1000,
+        verbose: false,
+        tools: false,
+      },
+    };
+  }
+
   const config = {
     options: {
       help: {
@@ -103,6 +135,8 @@ AI CLI - Gemini AIを使用したコマンドラインツール
 
 使用方法:
   ai [options] [prompt]
+  ai auth                認証を設定
+  ai mcp <subcommand>    MCP設定を管理
 
 オプション:
   -f, --file <path>      入力ファイルを指定（複数指定可）
@@ -126,12 +160,64 @@ AI CLI - Gemini AIを使用したコマンドラインツール
   # 複数のオプション
   ai -f README.md -m gemini-pro -t 2000 "より良いREADMEに改善して"
 
+  # 認証設定
+  ai auth
+
+  # MCP設定管理
+  ai mcp add     # MCPサーバーを追加
+  ai mcp list    # 設定済みサーバーを表示
+
 必要な権限:
-  --allow-env   # カラー出力の検出のため
-  --allow-read  # ファイル読み込みのため
+  --allow-env   # カラー出力の検出と開発モードでの環境変数読み込みのため
+  --allow-read  # ファイル読み込みと設定ファイル読み込みのため
+  --allow-write # 認証情報とMCP設定ファイルの書き込みのため
   --allow-net   # Gemini APIアクセスのため
+  --allow-run   # MCPサーバープロセスの起動のため（--toolsオプション使用時）
 `);
 }
+
+Deno.test("parseArgs - authコマンドをパース", () => {
+  const args = parseArgs(["auth"]);
+
+  assertEquals(args.mode, "auth");
+  assertEquals(args.files, []);
+  assertEquals(args.options.help, false);
+  assertEquals(args.options.model, getDefaultModel());
+  assertEquals(args.options.maxTokens, 1000);
+  assertEquals(args.options.verbose, false);
+  assertEquals(args.options.tools, false);
+});
+
+Deno.test("parseArgs - mcpコマンドをパース", () => {
+  const args = parseArgs(["mcp", "add"]);
+
+  assertEquals(args.mode, "mcp");
+  assertEquals(args.mcpSubcommand, "add");
+  assertEquals(args.files, []);
+  assertEquals(args.options.help, false);
+  assertEquals(args.options.model, getDefaultModel());
+  assertEquals(args.options.maxTokens, 1000);
+  assertEquals(args.options.verbose, false);
+  assertEquals(args.options.tools, false);
+});
+
+Deno.test("parseArgs - mcpコマンド（サブコマンドなし）", () => {
+  const args = parseArgs(["mcp"]);
+
+  assertEquals(args.mode, "mcp");
+  assertEquals(args.mcpSubcommand, "help");
+  assertEquals(args.files, []);
+});
+
+Deno.test("parseArgs - mcpコマンド（各サブコマンド）", () => {
+  const subcommands = ["add", "list", "remove", "help"];
+  
+  for (const subcommand of subcommands) {
+    const args = parseArgs(["mcp", subcommand]);
+    assertEquals(args.mode, "mcp");
+    assertEquals(args.mcpSubcommand, subcommand);
+  }
+});
 
 Deno.test("showHelp - ヘルプメッセージを表示", () => {
   const originalLog = console.log;
@@ -147,6 +233,8 @@ Deno.test("showHelp - ヘルプメッセージを表示", () => {
   assertEquals(output.includes("使用方法:"), true);
   assertEquals(output.includes("オプション:"), true);
   assertEquals(output.includes("-h, --help"), true);
+  assertEquals(output.includes("ai auth"), true);
+  assertEquals(output.includes("ai mcp"), true);
 
   console.log = originalLog;
 });
