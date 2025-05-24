@@ -204,7 +204,7 @@ async function runOneshotMode(context: ExecutionContext, mcpClient: Client[]) {
     // 残りのバッファを出力
     buffer.flush();
     console.log(); // 最後に改行
-
+    
     if (hasToolCalls) {
       divider();
     }

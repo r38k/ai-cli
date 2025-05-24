@@ -300,9 +300,7 @@ export function showSpinner(
     // カーソルを行頭に戻して上書き
     Deno.stdout.writeSync(
       new TextEncoder().encode(
-        `\r${styler.cyan("·")} ${styler.yellow(message + "…")} ${
-          styler.dim().gray(frame)
-        }`,
+        `\r${styler.dim().yellow(frame)} ${styler.yellow(message + "…")} `,
       ),
     );
     frameIndex++;

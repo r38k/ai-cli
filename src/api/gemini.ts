@@ -38,22 +38,18 @@ export async function* generateText(
 
   // Build config with conditional tools
   const config: GenerateContentConfig = {
-    maxOutputTokens: options.maxOutputTokens || 1000,
-  };
-
-  // Only add tools configuration if MCP clients are provided
-  if (mcp.length > 0) {
-    config.tools = [mcpToTool(...mcp, {}), {
-      codeExecution: {}
-    }, {
-      googleSearch: {}
-    }];
-    config.toolConfig = {
+    maxOutputTokens: options.maxOutputTokens || 8192,
+    tools: mcp.length > 0 ? [mcpToTool(...mcp, {}), 
+      { codeExecution: {}, googleSearch: {} }, 
+    ] : [
+      { codeExecution: {}, googleSearch: {} },
+    ],
+    toolConfig: {
       functionCallingConfig: {
         mode: FunctionCallingConfigMode.AUTO,
       },
-    };
-  }
+    },
+  };
 
   const response = await client.models.generateContentStream({
     model: options.model || getDefaultModel(),

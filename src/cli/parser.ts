@@ -80,7 +80,7 @@ export function parseArgs(args: string[]): ParsedArgs {
       "max-tokens": {
         type: "string" as const, // parseArgsは数値型をサポートしないため
         short: "t",
-        default: "1000",
+        default: "8192",
       },
       system: {
         type: "string" as const,
