@@ -1,5 +1,7 @@
 // 必要な権限: --allow-env (Kleurのカラー検出のため)
 import { parseArgs as nodeParseArgs } from "node:util";
+import { assertEquals } from "https://deno.land/std@0.208.0/assert/mod.ts";
+import { getDefaultModel } from "../api/model.ts";
 
 /**
  * 実行モード
@@ -41,7 +43,7 @@ export function parseArgs(args: string[]): ParsedArgs {
       model: {
         type: "string" as const,
         short: "m",
-        default: "gemini-2.0-flash-exp",
+        default: getDefaultModel(),
       },
       "max-tokens": {
         type: "string" as const, // parseArgsは数値型をサポートしないため
@@ -76,7 +78,9 @@ export function parseArgs(args: string[]): ParsedArgs {
   const result: ParsedArgs = {
     mode: positionals.length > 0 ? "oneshot" : "interactive",
     prompt: positionals.length > 0 ? positionals.join(" ") : undefined,
-    files: values.file ? (Array.isArray(values.file) ? values.file : [values.file]) : [],
+    files: values.file
+      ? (Array.isArray(values.file) ? values.file : [values.file])
+      : [],
     options: {
       help: values.help ?? false,
       model: values.model as string,
@@ -102,7 +106,7 @@ AI CLI - Gemini AIを使用したコマンドラインツール
 
 オプション:
   -f, --file <path>      入力ファイルを指定（複数指定可）
-  -m, --model <name>     使用するモデルを指定 (default: gemini-2.0-flash-exp)
+  -m, --model <name>     使用するモデルを指定 (default: ${getDefaultModel()})
   -t, --max-tokens <n>   最大出力トークン数 (default: 1000)
   -s, --system <prompt>  システムプロンプトを指定
   -v, --verbose          詳細な出力を表示
@@ -128,3 +132,21 @@ AI CLI - Gemini AIを使用したコマンドラインツール
   --allow-net   # Gemini APIアクセスのため
 `);
 }
+
+Deno.test("showHelp - ヘルプメッセージを表示", () => {
+  const originalLog = console.log;
+  let output = "";
+  console.log = (message: unknown) => {
+    output = String(message);
+  };
+
+  showHelp();
+
+  // ヘルプメッセージに含まれるべき内容をチェック
+  assertEquals(output.includes("AI CLI"), true);
+  assertEquals(output.includes("使用方法:"), true);
+  assertEquals(output.includes("オプション:"), true);
+  assertEquals(output.includes("-h, --help"), true);
+
+  console.log = originalLog;
+});

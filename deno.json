@@ -1,7 +1,8 @@
 {
   "tasks": {
     "dev": "deno run --watch src/index.ts",
-    "build": "deno compile --allow-read --allow-env --allow-run --allow-net --allow-sys -o ai src/index.ts && chmod +x ai"
+    "build": "deno compile --allow-read --allow-env --allow-run --allow-net --allow-sys -o ai src/index.ts && chmod +x ai",
+    "run": "run --allow-read --allow-env --allow-run --allow-net --allow-sys src/index.ts --tools"
   },
   "imports": {
     "@google/genai": "npm:@google/genai@^1.0.1",

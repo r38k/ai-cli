@@ -1,7 +1,8 @@
 /**
  * デフォルトのシステムプロンプト（Claude Code風）
  */
-export const DEFAULT_SYSTEM_PROMPT = `あなたは優秀なプログラミングアシスタントです。以下の指針に従って行動してください：
+export const DEFAULT_SYSTEM_PROMPT =
+  `あなたは優秀なプログラミングアシスタントです。以下の指針に従って行動してください：
 
 ## 基本原則
 - 簡潔で的確な回答を心がける
@@ -31,12 +32,12 @@ export const DEFAULT_SYSTEM_PROMPT = `あなたは優秀なプログラミング
 export function buildContextualPrompt(
   inputContent: string,
   userPrompt?: string,
-  customSystemPrompt?: string
+  customSystemPrompt?: string,
 ): { systemPrompt: string; userMessage: string } {
   const systemPrompt = customSystemPrompt || DEFAULT_SYSTEM_PROMPT;
-  
+
   let userMessage = "";
-  
+
   // 入力内容がある場合
   if (inputContent) {
     userMessage = inputContent;
@@ -46,7 +47,7 @@ export function buildContextualPrompt(
   } else if (userPrompt) {
     userMessage = userPrompt;
   }
-  
+
   return { systemPrompt, userMessage };
 }
 
@@ -62,7 +63,7 @@ export function buildWorkingDirectoryContext(): string {
     // hostname()は権限が必要な場合がある
   }
   const osInfo = Deno.build.os;
-  
+
   return `## 実行環境情報
 - 作業ディレクトリ: ${cwd}
 - ホスト名: ${hostname}
@@ -74,9 +75,9 @@ export function buildWorkingDirectoryContext(): string {
  * ファイル内容をフォーマット（改善版）
  */
 export function formatFileContent(path: string, content: string): string {
-  const extension = path.split('.').pop() || '';
+  const extension = path.split(".").pop() || "";
   const language = getLanguageFromExtension(extension);
-  
+
   return `## ファイル: ${path}
 \`\`\`${language}
 ${content}
@@ -88,67 +89,67 @@ ${content}
  */
 function getLanguageFromExtension(ext: string): string {
   const languageMap: Record<string, string> = {
-    'ts': 'typescript',
-    'tsx': 'tsx',
-    'js': 'javascript',
-    'jsx': 'jsx',
-    'py': 'python',
-    'rb': 'ruby',
-    'go': 'go',
-    'rs': 'rust',
-    'java': 'java',
-    'cpp': 'cpp',
-    'c': 'c',
-    'cs': 'csharp',
-    'php': 'php',
-    'swift': 'swift',
-    'kt': 'kotlin',
-    'scala': 'scala',
-    'sh': 'bash',
-    'bash': 'bash',
-    'zsh': 'zsh',
-    'fish': 'fish',
-    'ps1': 'powershell',
-    'r': 'r',
-    'sql': 'sql',
-    'html': 'html',
-    'css': 'css',
-    'scss': 'scss',
-    'sass': 'sass',
-    'less': 'less',
-    'xml': 'xml',
-    'json': 'json',
-    'yaml': 'yaml',
-    'yml': 'yaml',
-    'toml': 'toml',
-    'ini': 'ini',
-    'cfg': 'ini',
-    'conf': 'nginx',
-    'md': 'markdown',
-    'mdx': 'markdown',
-    'tex': 'latex',
-    'vim': 'vim',
-    'lua': 'lua',
-    'dart': 'dart',
-    'elm': 'elm',
-    'clj': 'clojure',
-    'ex': 'elixir',
-    'exs': 'elixir',
-    'erl': 'erlang',
-    'hrl': 'erlang',
-    'fs': 'fsharp',
-    'fsx': 'fsharp',
-    'ml': 'ocaml',
-    'mli': 'ocaml',
-    'pas': 'pascal',
-    'pl': 'perl',
-    'hs': 'haskell',
-    'jl': 'julia',
-    'nim': 'nim',
-    'nix': 'nix',
-    'vue': 'vue',
-    'svelte': 'svelte',
+    "ts": "typescript",
+    "tsx": "tsx",
+    "js": "javascript",
+    "jsx": "jsx",
+    "py": "python",
+    "rb": "ruby",
+    "go": "go",
+    "rs": "rust",
+    "java": "java",
+    "cpp": "cpp",
+    "c": "c",
+    "cs": "csharp",
+    "php": "php",
+    "swift": "swift",
+    "kt": "kotlin",
+    "scala": "scala",
+    "sh": "bash",
+    "bash": "bash",
+    "zsh": "zsh",
+    "fish": "fish",
+    "ps1": "powershell",
+    "r": "r",
+    "sql": "sql",
+    "html": "html",
+    "css": "css",
+    "scss": "scss",
+    "sass": "sass",
+    "less": "less",
+    "xml": "xml",
+    "json": "json",
+    "yaml": "yaml",
+    "yml": "yaml",
+    "toml": "toml",
+    "ini": "ini",
+    "cfg": "ini",
+    "conf": "nginx",
+    "md": "markdown",
+    "mdx": "markdown",
+    "tex": "latex",
+    "vim": "vim",
+    "lua": "lua",
+    "dart": "dart",
+    "elm": "elm",
+    "clj": "clojure",
+    "ex": "elixir",
+    "exs": "elixir",
+    "erl": "erlang",
+    "hrl": "erlang",
+    "fs": "fsharp",
+    "fsx": "fsharp",
+    "ml": "ocaml",
+    "mli": "ocaml",
+    "pas": "pascal",
+    "pl": "perl",
+    "hs": "haskell",
+    "jl": "julia",
+    "nim": "nim",
+    "nix": "nix",
+    "vue": "vue",
+    "svelte": "svelte",
   };
-  
+
   return languageMap[ext.toLowerCase()] || ext;
 }

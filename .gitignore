@@ -31,3 +31,14 @@ src/tools/server/*
 
 .env
 config
+
+# Compiled binaries
+ai
+
+# Demo and test scripts
+demo.sh
+test-markdown.sh
+test.md
+
+# Examples (if temporary)
+examples/

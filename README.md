@@ -1,6 +1,7 @@
 # AI CLI
 
-Google Gemini AIとModel Context Protocol (MCP)を統合したDenoベースのCLIツールです。対話型とワンショット実行の両モードをサポートし、MCPツールによる高度な機能拡張が可能です。
+Google Gemini AIとModel Context Protocol
+(MCP)を統合したDenoベースのCLIツールです。対話型とワンショット実行の両モードをサポートし、MCPツールによる高度な機能拡張が可能です。
 
 ## 機能
 
@@ -78,15 +79,15 @@ ai -s "経験豊富なコードレビュアーとして" -f main.go "このGoコ
 
 ## オプション
 
-| オプション | 短縮形 | 説明 | デフォルト |
-|---------|-------|------|----------|
-| `--file` | `-f` | 入力ファイルを指定（複数指定可） | - |
-| `--model` | `-m` | 使用するGeminiモデル | gemini-2.0-flash-exp |
-| `--max-tokens` | `-t` | 最大出力トークン数 | 1000 |
-| `--system` | `-s` | システムプロンプト | - |
-| `--verbose` | `-v` | 詳細な出力を表示 | false |
-| `--tools` | - | MCPツールを有効化 | false |
-| `--help` | `-h` | ヘルプを表示 | - |
+| オプション     | 短縮形 | 説明                             | デフォルト           |
+| -------------- | ------ | -------------------------------- | -------------------- |
+| `--file`       | `-f`   | 入力ファイルを指定（複数指定可） | -                    |
+| `--model`      | `-m`   | 使用するGeminiモデル             | gemini-2.0-flash-exp |
+| `--max-tokens` | `-t`   | 最大出力トークン数               | 1000                 |
+| `--system`     | `-s`   | システムプロンプト               | -                    |
+| `--verbose`    | `-v`   | 詳細な出力を表示                 | false                |
+| `--tools`      | -      | MCPツールを有効化                | false                |
+| `--help`       | `-h`   | ヘルプを表示                     | -                    |
 
 ## MCP設定
 
@@ -97,7 +98,11 @@ MCPツールを使用するには、設定ファイルを作成して環境変�
   "mcpServer": {
     "filesystem": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/workspace"],
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/path/to/workspace"
+      ],
       "env": {}
     }
   }
