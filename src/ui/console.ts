@@ -107,6 +107,22 @@ Deno.test("error - エラーメッセージ表示", () => {
   console.error = originalError;
 });
 
+Deno.test("renderMarkdown - inline code within code blocks", () => {
+  const markdownInput = "```\n" +
+    "const a = `one`;\n" +
+    "let b = `two` and `three`;\n" +
+    "```";
+  const expectedOutput = "\n" +
+    "┌─\n" +
+    "│ const a =  one ;\n" +
+    "│ let b =  two  and  three ;\n" +
+    "└─\n";
+
+  const rendered = renderMarkdown(markdownInput);
+  const stripped = stripAnsiCode(rendered);
+  assertEquals(stripped, expectedOutput);
+});
+
 /**
  * 成功メッセージ表示
  */
@@ -340,9 +356,19 @@ export function renderMarkdown(text: string): string {
     if (lines[lines.length - 1] === "") {
       lines.pop();
     }
-    const formatted = lines.map((line: string) =>
-      styler.dim().gray("│ ") + styler.gray(line)
-    ).join("\n");
+    const formatted = lines.map((line: string) => {
+      const lineStyler = getStyler(); // Use a fresh styler for each line
+      let outputLine = lineStyler.dim().gray("│ ");
+      const segments = line.split('`');
+      segments.forEach((segment, index) => {
+        if (index % 2 === 0) { // Normal code
+          outputLine += lineStyler.dim().gray(segment);
+        } else { // Inline code
+          outputLine += lineStyler.dim().green(` ${segment} `);
+        }
+      });
+      return outputLine;
+    }).join("\n");
     const header = lang
       ? styler.dim().gray(`┌─ ${lang} ─`)
       : styler.dim().gray("┌─");
