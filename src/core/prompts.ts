@@ -3,7 +3,7 @@
 /**
  * デフォルトのシステムプロンプト（Claude Code風）
  */
-export const DEFAULT_SYSTEM_PROMPT =
+export const DEFAULT_SYSTEM_PROMPT = (workingDirContext: string) =>
   `あなたは優秀なプログラミングアシスタントです。以下の指針に従って行動してください：
 
 ## 基本原則
@@ -26,7 +26,9 @@ export const DEFAULT_SYSTEM_PROMPT =
 ## 倫理的配慮
 - 悪意のあるコードの作成や説明は拒否する
 - プライバシーやセキュリティに関わる情報は慎重に扱う
-- ライセンスや著作権を尊重する`;
+- ライセンスや著作権を尊重する
+
+${workingDirContext}`;
 
 /**
  * コンテキストに基づいてプロンプトを構築
@@ -36,7 +38,8 @@ export function buildContextualPrompt(
   userPrompt?: string,
   customSystemPrompt?: string,
 ): { systemPrompt: string; userMessage: string } {
-  const systemPrompt = customSystemPrompt || DEFAULT_SYSTEM_PROMPT;
+  const workingDirContext = buildWorkingDirectoryContext();
+  const systemPrompt = customSystemPrompt || DEFAULT_SYSTEM_PROMPT(workingDirContext);
 
   let userMessage = "";
 

@@ -26,8 +26,11 @@ cd ai-cli
 # バイナリとしてビルド
 deno task build
 
-# aiコマンドをパスの通った場所に移動（オプション）
-sudo mv bin/ai /usr/local/bin/ai
+# aiコマンドをパスの通った場所にシンボリックリンクで登録（推奨）
+sudo ln -sf $(pwd)/bin/ai /usr/local/bin/ai
+
+# または、直接移動（シンボリックリンクを使わない場合）
+# sudo mv bin/ai /usr/local/bin/ai
 ```
 
 ### 2. 初期設定

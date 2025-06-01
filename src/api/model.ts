@@ -168,6 +168,7 @@ export const GEMINI_MODELS = {
 } as const satisfies Record<string, GeminiModel>;
 
 export type ModelId = keyof typeof GEMINI_MODELS;
+export const MODEL_IDS = Object.keys(GEMINI_MODELS) as ModelId[];
 
 // Helper functions
 export function getModelById(id: ModelId): GeminiModel | undefined {

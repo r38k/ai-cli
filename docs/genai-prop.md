@@ -891,6 +891,9 @@ export interface MessageCreateParamsBase {
 * [thinkingConfig](#thinkingConfig)
 
 ### temperature
+`temperature`の値を変えながら，出力結果を確認してみましょう．
+
+
 
 ### topP
 
@@ -902,10 +905,26 @@ export interface MessageCreateParamsBase {
 `gemini-2.5-flash-preview-05-20`では出力トークンの上限が`65,536`に設定されている．
 よってこの値は1 ~ 65,536の範囲で設定できる．
 
+ai-cliでは，`-t`オプションを用いて，maxOutputTokensを制御できるようになっています．
+値を変えながら，出力結果を確認していくと分かりやすいです．
+
 ```sh
-
-
+ai "こんにちは"
+こんにちは！何かお手伝いできることはありますか？
+ai "こんにちは" -t 1
+こんにちは
+ai "こんにちは" -t 2
+こんにちは！
+ai "こんにちは" -t 3
+こんにちは！何か
+ai "こんにちは" -t 4
+こんにちは！何かお手
 ```
+
+デフォルトの最大トークン数は`8192`になっています．
+最大トークン数を1ずつ増やしていくと，出力結果が徐々に長くなっています．
+こうみると，"こんにちは"が1トークンでカウントされていて，tokenizerの進化が見えますね．
+"！", "何か", "お手"がそれぞれ1トークンずつ増えていることが分かります．
 
 ### stopSequences
 

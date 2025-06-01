@@ -43,21 +43,8 @@ async function runInteractiveMode(
   const history: Content[] = [];
 
   // システムプロンプトを設定（カスタムまたはデフォルト）
-  const systemPrompt = context.options.system || DEFAULT_SYSTEM_PROMPT;
   const workingDirContext = buildWorkingDirectoryContext();
-
-  // TODO
-  history.push({
-    role: "user",
-    parts: [{ text: `${systemPrompt}\n\n${workingDirContext}` }],
-  });
-  history.push({
-    role: "model",
-    parts: [{
-      text:
-        "了解しました。プログラミングに関する質問やタスクをお手伝いします。",
-    }],
-  });
+  const systemPrompt = context.options.system || DEFAULT_SYSTEM_PROMPT(workingDirContext);
 
   while (true) {
     const input = prompt(">");
@@ -83,6 +70,7 @@ async function runInteractiveMode(
       const stream = generateText(history, mcpClient, {
         model: context.options.model,
         maxOutputTokens: context.options.maxTokens,
+        systemPrompt: systemPrompt,
         onToolCall: (name, params) => {
           hideSpinner("response");
           toolCallStart(name, params);
@@ -141,8 +129,8 @@ async function runOneshotMode(context: ExecutionContext, mcpClient: Client[]) {
   const history: Content[] = [];
 
   // システムプロンプトを設定（カスタムまたはデフォルト）
-  const systemPrompt = context.options.system || DEFAULT_SYSTEM_PROMPT;
   const workingDirContext = buildWorkingDirectoryContext();
+  const systemPrompt = context.options.system || DEFAULT_SYSTEM_PROMPT(workingDirContext);
 
   // プロンプトを構築
   const { userMessage } = buildContextualPrompt(
@@ -150,15 +138,6 @@ async function runOneshotMode(context: ExecutionContext, mcpClient: Client[]) {
     context.prompt,
     context.options.system,
   );
-
-  history.push({
-    role: "user",
-    parts: [{ text: `${systemPrompt}\n\n${workingDirContext}` }],
-  });
-  history.push({
-    role: "model",
-    parts: [{ text: "了解しました。" }],
-  });
 
   // ユーザーのメッセージを追加
   if (userMessage) {
@@ -175,6 +154,7 @@ async function runOneshotMode(context: ExecutionContext, mcpClient: Client[]) {
     const stream = generateText(history, mcpClient, {
       model: context.options.model,
       maxOutputTokens: context.options.maxTokens,
+      systemPrompt: systemPrompt,
       onToolCall: (name, params) => {
         hideSpinner("response");
         toolCallStart(name, params);

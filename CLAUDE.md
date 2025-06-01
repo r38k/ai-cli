@@ -22,21 +22,31 @@ Google Gemini AIとModel Context Protocol (MCP) を統合したDenoベースのC
 
 #### テストファイルの実行
 
-注意: Denoのテストは、ファイル内にDeno.test()が含まれているファイルを直接指定する必要があります。
+注意: このプロジェクトのテストは各ソースファイル内に直接記述されています（別ファイルではありません）。
 
 ```bash
-# UIテストの実行
-deno test src/ui/console.test.ts src/ui/styles.test.ts --allow-env
+# 主要なテストファイルの実行
+deno test src/cli/parser.ts src/cli/input.ts src/cli/modes.ts src/ui/console.ts src/ui/styles.ts --allow-env --allow-read --allow-write
 
-# CLIテストの実行  
-deno test src/cli/input.test.ts src/cli/modes.test.ts src/cli/parser.test.ts --allow-env --allow-read
-
-# 全テストの実行（推奨）
-deno test --allow-env --allow-read --allow-write --allow-net --allow-run
+# 全テストの実行（srcディレクトリ内のDeno.testを含む全ファイル）
+deno test src/ --allow-env --allow-read --allow-write --allow-net --allow-run
 
 # 特定のテストファイルのみ実行
-deno test src/cli/parser.test.ts --allow-env
+deno test src/cli/parser.ts --allow-env
+
+# 型チェックをスキップして実行（エラーがある場合）
+deno test src/ --no-check --allow-env --allow-read --allow-write
 ```
+
+#### テストが含まれているファイル
+
+- `src/cli/parser.ts` - CLIパーサーのテスト
+- `src/cli/input.ts` - 入力処理のテスト
+- `src/cli/modes.ts` - 実行モードのテスト
+- `src/ui/console.ts` - コンソールUIのテスト
+- `src/ui/styles.ts` - スタイリングのテスト
+- `src/cli/mcp.ts` - MCP設定のテスト
+- `src/core/auth.ts` - 認証のテスト
 
 ## アーキテクチャ
 

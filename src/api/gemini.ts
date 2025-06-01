@@ -12,6 +12,7 @@ import { getApiKey } from "../core/auth.ts";
 export interface GenerateTextOptions {
   model?: string;
   maxOutputTokens?: number;
+  systemPrompt?: string;
   onToolCall?: (toolName: string, params: unknown) => void;
   onToolResult?: (toolName: string, result: unknown) => void;
 }
@@ -39,6 +40,7 @@ export async function* generateText(
   // Build config with conditional tools
   const config: GenerateContentConfig = {
     maxOutputTokens: options.maxOutputTokens || 8192,
+    systemInstruction: options.systemPrompt,
     tools: mcp.length > 0 ? [mcpToTool(...mcp, {}), 
       { codeExecution: {}, googleSearch: {} }, 
     ] : [

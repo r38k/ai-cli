@@ -82,7 +82,7 @@ Deno.test("createExecutionContext - ワンショットモード（プロンプ�
     files: [],
     options: {
       help: false,
-      model: MODEL_IDS.GEMINI_1_5_PRO,
+      model: "gemini-1.5-pro",
       maxTokens: 2000,
       verbose: true,
       tools: false,
@@ -94,7 +94,7 @@ Deno.test("createExecutionContext - ワンショットモード（プロンプ�
   assertEquals(context.mode, "oneshot");
   assertEquals(context.prompt, "Hello world");
   assertEquals(context.inputContent, "");
-  assertEquals(context.options.model, MODEL_IDS.GEMINI_1_5_PRO);
+  assertEquals(context.options.model, "gemini-1.5-pro");
   assertEquals(context.options.verbose, true);
 });
 
