@@ -863,6 +863,7 @@ export interface MessageCreateParamsBase {
 
 各オプションがどのように動作するかを確認します．
 今回は自分が使うことの多いGeminiの推論オプションを確認します．
+[https://cloud.google.com/vertex-ai/generative-ai/docs/model-reference/inference?hl=en#generationconfig](https://cloud.google.com/vertex-ai/generative-ai/docs/model-reference/inference?hl=en#generationconfig)
 
 自作したCLIツールでオプションを変えて，出力結果を確認していきます．
 モデルは`gemini-2.5-flash-preview-05-20`を使用します．
@@ -892,14 +893,161 @@ export interface MessageCreateParamsBase {
 
 ### temperature
 `temperature`の値を変えながら，出力結果を確認してみましょう．
+Haskellでfizzbuzzのコードを書かせてみました．
 
+```sh
+# temperature=デフォルト
+deno task dev "Haskellでfizzbuzzのコードを書いてください"
+# 1回目
+fizzbuzz :: Int -> String
+fizzbuzz n
+  | n  mod  15 == 0 = "FizzBuzz"
+  | n  mod  3  == 0 = "Fizz"
+  | n  mod  5  == 0 = "Buzz"
+  | otherwise       = show n
 
+main :: IO ()
+main = mapM_ putStrLn $ map fizzbuzz [1..100]
+# 2回目
+fizzbuzz :: Int -> String
+fizzbuzz n
+  | n  mod  15 == 0 = "FizzBuzz"
+  | n  mod  3 == 0  = "Fizz"
+  | n  mod  5 == 0  = "Buzz"
+  | otherwise       = show n
+
+main :: IO ()
+main = mapM_ (putStrLn . fizzbuzz) [1..100]
+
+# temperature=0
+deno task dev "Haskellでfizzbuzzのコードを書いてください"
+# 1回目
+module Main where
+
+fizzbuzz :: Int -> String
+fizzbuzz n
+  | n  mod  15 == 0 = "FizzBuzz"
+  | n  mod  3  == 0 = "Fizz"
+  | n  mod  5  == 0 = "Buzz"
+  | otherwise       = show n
+
+main :: IO ()
+main = do
+  mapM_ (putStrLn . fizzbuzz) [1..100]
+# 2回目
+module Main where
+
+fizzbuzz :: Int -> String
+fizzbuzz n
+    | n  mod  15 == 0 = "FizzBuzz" 
+    | n  mod  3 == 0  = "Fizz"     
+    | n  mod  5 == 0  = "Buzz"     
+    | otherwise       = show n     
+
+main :: IO ()
+main = do
+    putStrLn $ unlines $ map fizzbuzz [1..100]
+
+# temperature=2
+deno task dev "Haskellでfizzbuzzのコードを書いてください"
+# 1回目
+module Main where
+
+fizzbuzz :: Int -> String
+fizzbuzz x
+  | isFizz && isBuzz = "FizzBuzz" 
+  | isFizz           = "Fizz"      
+  | isBuzz           = "Buzz"
+  | otherwise        = show x      
+
+  where
+    isFizz = x  mod  3 == 0
+    isBuzz = x  mod  5 == 0
+
+main :: IO ()
+main = mapM_ (putStrLn . fizzbuzz) [1..100]
+# 2回目
+main :: IO ()
+main = mapM_ putStrLn $ map fizzbuzz [1..100]
+
+fizzbuzz :: Int -> String
+fizzbuzz n
+  | n  mod  15 == 0 = "FizzBuzz"
+  | n  mod  3 == 0  = "Fizz"      
+  | n  mod  5 == 0  = "Buzz"      
+  | otherwise       = show n      
+
+```
+
+このくらいの指示だとデフォルトとtemperature=0にあまり差はありません．
+しかし，temperature=2にすると，実装方法が変わっています．
+
+いいお題がなかったので，少し分かりにくいですが，一応これで違いは分かりました．
 
 ### topP
 
 ### topK
 
 ### candidateCount
+`candidateCount`はLLMに回答を何個生成させるかを指定できます．
+例えば，`candidateCount=2`と指定すると，LLMは2つの回答を生成します．
+複数パターンの回答を生成させ，その中からいい回答を選ぶことができます．
+
+このオプションはpreview版で一部モデルのみサポートされています．
+また，streaming出力には対応していません．
+ai-cliにはstreamingしか実装していないので，サンプルコードを作成し動作を確認しました．
+
+サポートされているのは，以下の二つのみとドキュメントには書かれています．
+* `gemini-2.0-flash-lite`
+* `gemini-2.0-flash`
+
+しかし，`gemini-2.5-flash-preview-05-20`と`gemini-2.5-pro-preview-05-06`で動くことを確認しました．
+
+以下は`candidateCount=2`と指定した場合の出力例です．
+```json
+GenerateContentResponse {
+  candidates: [
+    {
+      content: {
+        parts: [ { text: "こんにちは！何かお手伝いできることはありますか？" } ],
+        role: "model"
+      },
+      finishReason: "STOP",
+      index: 0
+    },
+    {
+      content: {
+        parts: [ { text: "こんにちは！何かお手伝いできることはありますか？" } ],
+        role: "model"
+      },
+      finishReason: "STOP",
+      index: 1
+    }
+  ],
+  modelVersion: "models/gemini-2.5-pro-preview-05-06",
+  usageMetadata: {
+    promptTokenCount: 2,
+    candidatesTokenCount: 11,
+    totalTokenCount: 447,
+    promptTokensDetails: [ { modality: "TEXT", tokenCount: 2 } ],
+    thoughtsTokenCount: 434
+  }
+}
+```
+
+streaming出力の方も実は動くのではと確かめてみましたがエラーが発生しました．
+```json
+{
+    "error":
+        {
+            "message": "{\n  \"error\": {\n    \"code\": 400,\n    \"message\": \"Only one candidate can be specified in the current model\",\n    \"status\": \"INVALID_ARGUMENT\"\n  }\n}\n",
+            "code": 400,
+            "status": "Bad Request"
+        }
+}
+```
+
+streaming出力は`generateContentStream`，非streaming出力は`generateContent`に関数が分かれているので，`generateContentStream`ではプロパティを設定できないようにできるのでは？と思いますが．
 
 ### maxOutputTokens
 `gemini-2.5-flash-preview-05-20`では出力トークンの上限が`65,536`に設定されている．
@@ -927,28 +1075,86 @@ ai "こんにちは" -t 4
 "！", "何か", "お手"がそれぞれ1トークンずつ増えていることが分かります．
 
 ### stopSequences
+`stopSequences`には文字列の配列を指定できます．
+LLMの回答の中に，指定した文字列が検出された場合にテキスト生成を停止することができます．
+
+例として，`stopSequences: ["！"]`のように設定してみます．
+```sh
+deno task dev "こんにちは"
+こんにちは
+```
+
+これまでの出力結果から，"こんにちは"の後に"！"が来ることが予想できますが，"こんにちは"で止まっているのを見るとちゃんと生成が止まっているようです．
+
+考えられる使い道としては，HTMLを出力させて`</html>`が来たら生成をストップし，以降に余計な文章が出力されないようにするなどでしょうか．
+よほど必要だと感じることがなければ，使うことは考えなくてもいいと思います．
 
 ### responseLogprobs
 
 ### logprobs
 
 ### presencePenalty
+`presencePenalty`は，既に生成されたテキスト中に含まれるトークンが再度出現する可能性を制御します．
+`-2.0` ~ `2.0`の範囲で設定できます．(2.0は含まれません)
+`-2.0`に近いほど既出のトークンを繰り返しやすく，`2.0`に近いほど多様な表現をするようになります．
+
+ドキュメントには`gemini-2.0-flash`と`gemini-2.0-flash-lite`のみサポートされているとあります．
+`candidateCount`の例があるので，一応確認してみましたが`gemini-2.5-flash-preview-05-20`では動かないようです．
+`Penalty is not enabled for models/gemini-2.5-flash-preview-05-20`
+
+Claudeに使用例を聞いてみましたが，高い値を設定して「素晴らしい」「最高の」などの形容詞の重複を避けたり，低い値を設定して重要な専門用語を繰り返すよう調整したりできるようです．
+コード生成時は低い値にして，なるべく既存の実装を維持するようにするみたいな使い道もあるかも？
 
 ### frequencyPenalty
+`frequencyPenalty`は`presencePenalty`に似ていますが，生成されたテキスト内に同じトークンが繰り返し出現する可能性を制御します．
+`presencePenalty`では一度でも出現したトークンすべてに一律のペナルティを課しますが，`frequencyPenalty`は出現する回数が多いほど強いペナルティを課します．
+`-2.0` ~ `2.0`の範囲で設定できます．(2.0は含まれません)
+`-2.0`に近いほど既出のトークンを繰り返しやすく，`2.0`に近いほど多様な表現をするようになります．
 
 ### seed
 
 ### responseMimeType
+`responseMimeType`は出力する回答のMIMEタイプを指定できます．
+設定できるMIMEタイプは以下の3つです．
+* `text/plain` (デフォルト)
+* `application/json`
+* `text/x.enum`
+
+デフォルトは`text/plain`で，特別な理由がない限りは変更する必要はありません．
+後述の`responseSchema`を使用してJSON形式で出力させたい場合は`application/json`を指定します．
+LLMに分類タスクをさせるときは，`text/x.enum`を指定します．
+`responseSchema`で定義した列挙値を出力します．
 
 ### responseSchema
+`responseSchema`でJSON Schemaあるいは列挙型を指定することで，LLMが指定した形式で出力するようになります．
+
 
 ### routingConfig
+(VertexAI専用)
+非推奨になっていて，`modelSelectionConfig`を使うことが推奨されています．
+内容は`modelSelectionConfig`で合わせて説明します．
 
 ### modelSelectionConfig
+(VertexAI専用)
+なんとなくイメージはついていますが，VertexAIを使ってないのでスキップ．
 
 ### safetySettings
+入力された内容に有害な要素が含まれるかを検出しブロックするための設定です．
+
+`HarmBlockMethod`
+
+`HarmCategory`
+
+`HarmBlockThreshold`
 
 ### toolConfig
+
+`FunctionCallingConfig`
+
+`RetrievalConfig`
+
+
+``
 
 ### labels
 
