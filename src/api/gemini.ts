@@ -49,6 +49,7 @@ export async function* generateText(
         mode: FunctionCallingConfigMode.AUTO,
       },
     },
+    
   };
 
   const response = await client.models.generateContentStream({

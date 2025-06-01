@@ -46,6 +46,7 @@ async function runInteractiveMode(
   const systemPrompt = context.options.system || DEFAULT_SYSTEM_PROMPT;
   const workingDirContext = buildWorkingDirectoryContext();
 
+  // TODO
   history.push({
     role: "user",
     parts: [{ text: `${systemPrompt}\n\n${workingDirContext}` }],
