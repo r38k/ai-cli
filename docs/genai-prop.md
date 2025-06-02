@@ -863,6 +863,7 @@ export interface MessageCreateParamsBase {
 
 各オプションがどのように動作するかを確認します．
 今回は自分が使うことの多いGeminiの推論オプションを確認します．
+音声や画像生成系のオプションは省略しています．
 [https://cloud.google.com/vertex-ai/generative-ai/docs/model-reference/inference?hl=en#generationconfig](https://cloud.google.com/vertex-ai/generative-ai/docs/model-reference/inference?hl=en#generationconfig)
 
 自作したCLIツールでオプションを変えて，出力結果を確認していきます．
@@ -986,7 +987,11 @@ fizzbuzz n
 
 ### topP
 
+TODO: 今回は力尽きました．
+
 ### topK
+
+TODO: 今回は力尽きました．
 
 ### candidateCount
 `candidateCount`はLLMに回答を何個生成させるかを指定できます．
@@ -1090,8 +1095,29 @@ deno task dev "こんにちは"
 よほど必要だと感じることがなければ，使うことは考えなくてもいいと思います．
 
 ### responseLogprobs
+各ステップでモデルに選ばれたトークンの`logprobs`(対数確率)を返すかどうか。(true/false)
+
+この機能は，ストリーミング出力には対応しておらず，以下のモデルのみサポートされているとドキュメントにあります．
+* `gemini-2.0-flash`
+* `gemini-2.0-flash-lite`
+
+ただ，実行してみると`gemini-2.0-flash`でもエラーになりました．
+```
+error: Uncaught (in promise) ClientError: got status: 400 Bad Request. {"error":{"code":400,"message":"Logprobs is not supported for the current model.","status":"INVALID_ARGUMENT"}}
+```
+
+VertexAIのモデルでないとダメなんでしょうか？
+ドキュメントには
+> responseLogprobsを使用したリクエストの1日の上限は1です。
+とあるので，どのみちあまり使えなさそうです．
+
+楽しみにしていたのですが残念です．
 
 ### logprobs
+各ステップ毎の`logprobs`の上位何トークンを返すかを指定します．
+`logprobs=5`を設定すると，`logprobs`の上位5トークンを返すようになります．
+
+`responseLogprobs`を指定できないので，このオプションも使えません．
 
 ### presencePenalty
 `presencePenalty`は，既に生成されたテキスト中に含まれるトークンが再度出現する可能性を制御します．
@@ -1112,6 +1138,9 @@ Claudeに使用例を聞いてみましたが，高い値を設定して「素�
 `-2.0`に近いほど既出のトークンを繰り返しやすく，`2.0`に近いほど多様な表現をするようになります．
 
 ### seed
+単純な生成時に使用するシード値です．
+デフォルトは乱数ですが，値を固定することで同じ入力に対して同じような出力をするようになります．
+`temperature=0`と同様に完全に同じ出力をするわけではありません．
 
 ### responseMimeType
 `responseMimeType`は出力する回答のMIMEタイプを指定できます．
@@ -1128,6 +1157,9 @@ LLMに分類タスクをさせるときは，`text/x.enum`を指定します．
 ### responseSchema
 `responseSchema`でJSON Schemaあるいは列挙型を指定することで，LLMが指定した形式で出力するようになります．
 
+用途によっては必須な設定です．
+
+TODO: 今回は力尽きました．
 
 ### routingConfig
 (VertexAI専用)
@@ -1141,23 +1173,56 @@ LLMに分類タスクをさせるときは，`text/x.enum`を指定します．
 ### safetySettings
 入力された内容に有害な要素が含まれるかを検出しブロックするための設定です．
 
-`HarmBlockMethod`
+* `HarmBlockMethod`: 有害なコンテンツをブロックする閾値の方法を指定します
+  * `HARM_BLOCK_METHOD_UNSPECIFIED`: ブロックする方法を指定しない
+  * `SEVERITY`: コンテンツが有害な確率と重大度のスコアを考慮してブロックする
+  * `PROBABILITY`: コンテンツが有害な確率を使用してブロックする (デフォルト)
 
-`HarmCategory`
+* `HarmCategory`: ブロックするコンテンツの有害カテゴリ
+  * `HARM_CATEGORY_UNSPECIFIED`: カテゴリの指定なし
+  * `HARM_CATEGORY_HATE_SPEECH`: ヘイトスピーチ
+  * `HARM_CATEGORY_DANGEROUS_CONTENT`: 危険なコンテンツ
+  * `HARM_CATEGORY_HARASSMENT`: 嫌がらせ
+  * `HARM_CATEGORY_SEXUALLY_EXPLICIT`: 性的なコンテンツ
+  * `HARM_CATEGORY_CIVIC_INTEGRITY`: 政治的なコンテンツ
 
-`HarmBlockThreshold`
+* `HarmBlockThreshold`: ブロックする閾値
+  * `HARM_BLOCK_THRESHOLD_UNSPECIFIED`: 閾値を指定しない
+  * `BLOCK_LOW_AND_ABOVE`: 閾値低 いっぱいブロックする
+  * `BLOCK_MEDIUM_AND_ABOVE`: 閾値中
+  * `BLOCK_ONLY_HIGH`: 閾値高 あまりブロックしない
+  * `BLOCK_NONE`: ブロックしない
+  * `OFF`: 安全フィルターをオフ
 
 ### toolConfig
 
-`FunctionCallingConfig`
-
-`RetrievalConfig`
-
-
-``
+* `FunctionCallingConfig`
+  * `mode`: `"AUTO"`, `"ANY"`, `"NONE"`
+    * ツール呼び出しの動作を制御できます．
+    * `AUTO`: モデルが関数呼び出しまたは自然言語応答のいずれかを予測する
+    * `ANY`: モデルが常に何れかのツール呼び出しを選択する
+    * `NONE`: モデルは関数呼び出しを予測しない
+  * `allowedFunctionNames`: `string[]`
+    * `mode`が`ANY`の場合は，`allowedFunctionNames`で指定した関数名のいずれかを選択する
+    * `allowedFunctionNames`を指定しない場合は，toolsに指定したすべてのツールが対象になる
+* `RetrievalConfig`
+  * `latLng`: `latitude`, `longitude`
+    * Geminiのグラウンディング機能を使い，Google検索を使用するときの現在地を緯度と経度で指定する
 
 ### labels
+API呼び出しに対して，ユーザーがKV形式でメタデータを設定することができます．
+使用用途を設定することで，`labels`毎の料金内訳を確認することができます．
 
 ### responseModalities
+LLMが生成するデータの形式を指定できます．
+`responseModalities=["TEXT", "IMAGE"]`のように指定すると，LLMはテキストと画像生成に対応します．
+画像や音声等の生成に対応しているGeminiならではのオプションです．
 
 ### thinkingConfig
+Reasioning用のオプションを設定できます．
+
+* `includeThoughts`: `boolean`
+  * レスポンスにReasoningの過程を含めるかを指定できます．
+* `thinkingBudget`: `number`
+  * Reasoningに使用できるトークン数を指定できます．
+

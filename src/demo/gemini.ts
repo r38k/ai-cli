@@ -22,7 +22,8 @@ async function generateText(text: string
         text: text
     }],
     config: {
-        candidateCount: 2
+        responseLogprobs: true,
+        logprobs: 3,
     },
   });
 
