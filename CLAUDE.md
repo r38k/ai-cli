@@ -70,8 +70,20 @@ deno test src/ --no-check --allow-env --allow-read --allow-write
 
 ### 設定ファイル
 
-- `~/.ai-cli/credentials` - Gemini APIキーの保存（Base64エンコード、権限600）
-- `~/.ai-cli/mcp-config.json` - MCPサーバー設定
+本プロジェクトはXDG Base Directory仕様に準拠しています：
+
+- `$XDG_DATA_HOME/ai-cli/credentials` - Gemini APIキーの保存（Base64エンコード、権限600）
+  - デフォルト: `~/.local/share/ai-cli/credentials`
+- `$XDG_CONFIG_HOME/ai-cli/mcp-config.json` - MCPサーバー設定
+  - デフォルト: `~/.config/ai-cli/mcp-config.json`
+
+#### レガシー設定からの移行
+
+`~/.ai-cli/`からの移行には以下のスクリプトを使用：
+
+```bash
+./migrate-xdg.sh
+```
 
 ### 開発モードでの環境変数（オプション）
 
@@ -92,12 +104,13 @@ ai mcp add
 ai mcp list
 
 # 設定ファイルの場所確認
-ls ~/.ai-cli/
+ls ~/.config/ai-cli/
+ls ~/.local/share/ai-cli/
 ```
 
 ### MCPサーバー設定ファイル形式
 
-`~/.ai-cli/mcp-config.json`:
+`~/.config/ai-cli/mcp-config.json`:
 
 ```json
 {
@@ -123,7 +136,7 @@ ls ~/.ai-cli/
 1. **APIキーエラー**:
    ```bash
    # 設定を確認
-   ls -la ~/.ai-cli/credentials
+   ls -la ~/.local/share/ai-cli/credentials
    # 再設定
    ai auth
    ```
@@ -131,7 +144,7 @@ ls ~/.ai-cli/
 2. **MCPサーバー接続エラー**:
    ```bash
    # 設定ファイルの確認
-   cat ~/.ai-cli/mcp-config.json
+   cat ~/.config/ai-cli/mcp-config.json
    # サーバーリストの確認
    ai mcp list
    ```
@@ -150,5 +163,5 @@ DENO_ENV=development deno run -A src/index.ts --verbose
 
 # 環境変数での設定
 export GEMINI_API_KEY="your-api-key"
-export MCP_CONFIG_PATH="~/.ai-cli/mcp-config.json"
+export MCP_CONFIG_PATH="~/.config/ai-cli/mcp-config.json"
 ```

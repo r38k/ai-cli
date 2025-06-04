@@ -222,9 +222,12 @@ const { assertEquals } = await import("@std/assert") as {
 // テスト用のホームディレクトリを設定
 const TEST_HOME_MCP = await Deno.makeTempDir();
 const originalHomeMcp = Deno.env.get("HOME");
+const originalXdgConfigHomeMcp = Deno.env.get("XDG_CONFIG_HOME");
 
 function setTestHomeMcp() {
   Deno.env.set("HOME", TEST_HOME_MCP);
+  // XDG環境変数をクリアしてデフォルト値を使用させる
+  Deno.env.delete("XDG_CONFIG_HOME");
 }
 
 function restoreHomeMcp() {
@@ -232,6 +235,12 @@ function restoreHomeMcp() {
     Deno.env.set("HOME", originalHomeMcp);
   } else {
     Deno.env.delete("HOME");
+  }
+  
+  if (originalXdgConfigHomeMcp) {
+    Deno.env.set("XDG_CONFIG_HOME", originalXdgConfigHomeMcp);
+  } else {
+    Deno.env.delete("XDG_CONFIG_HOME");
   }
 }
 
@@ -270,7 +279,7 @@ Deno.test({
       await saveMcpConfig(testConfig);
       
       // ファイルが作成されていることを確認
-      const configPath = join(TEST_HOME_MCP, ".ai-cli", "mcp-config.json");
+      const configPath = join(TEST_HOME_MCP, ".config", "ai-cli", "mcp-config.json");
       assertEquals(existsSync(configPath), true);
       
       // 内容を確認
@@ -325,7 +334,7 @@ Deno.test({
     setTestHomeMcp();
     
     try {
-      const configPath = join(TEST_HOME_MCP, ".ai-cli", "mcp-config.json");
+      const configPath = join(TEST_HOME_MCP, ".config", "ai-cli", "mcp-config.json");
       const configDir = dirname(configPath);
       
       // ディレクトリを作成

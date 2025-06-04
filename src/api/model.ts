@@ -194,5 +194,5 @@ export function getMultimodalModels(): GeminiModel[] {
 }
 
 export function getDefaultModel(): ModelId {
-  return "gemini-2.0-flash";
+  return "gemini-2.5-flash-preview-05-20";
 }

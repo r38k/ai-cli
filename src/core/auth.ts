@@ -1,7 +1,8 @@
 // 必要な権限: --allow-env --allow-read --allow-write (環境変数読み込みと認証情報ファイルの読み書きのため)
 import { join } from "jsr:@std/path";
-import { ensureDirSync } from "jsr:@std/fs";
+import { ensureDirSync, existsSync } from "jsr:@std/fs";
 import { encodeBase64, decodeBase64 } from "jsr:@std/encoding";
+import { getXdgConfigDir, getXdgDataDir, getLegacyConfigDir } from "./xdg.ts";
 
 export interface Credentials {
   geminiApiKey: string;
@@ -9,33 +10,23 @@ export interface Credentials {
   updatedAt: string;
 }
 
-const CONFIG_DIR = ".ai-cli";
 const CREDENTIALS_FILE = "credentials";
+const MCP_CONFIG_FILE = "mcp-config.json";
 
-/**
- * 設定ディレクトリのパスを取得
- */
-function getConfigDir(): string {
-  const homeDir = Deno.env.get("HOME") || Deno.env.get("USERPROFILE");
-  if (!homeDir) {
-    throw new Error("ホームディレクトリが見つかりません");
-  }
-  return join(homeDir, CONFIG_DIR);
-}
 
 /**
  * 認証情報ファイルのパスを取得
  */
 function getCredentialsPath(): string {
-  return join(getConfigDir(), CREDENTIALS_FILE);
+  return join(getXdgDataDir(), CREDENTIALS_FILE);
 }
 
 /**
  * 認証情報を保存
  */
 export async function saveCredentials(apiKey: string): Promise<void> {
-  const configDir = getConfigDir();
-  ensureDirSync(configDir);
+  const dataDir = getXdgDataDir();
+  ensureDirSync(dataDir);
   
   const credentials: Credentials = {
     geminiApiKey: apiKey,
@@ -106,7 +97,7 @@ export function getMcpConfigPath(): string {
     if (envPath) return envPath;
   }
   
-  return join(getConfigDir(), "mcp-config.json");
+  return join(getXdgConfigDir(), MCP_CONFIG_FILE);
 }
 
 // テスト
@@ -114,16 +105,21 @@ const { assertEquals, assertExists } = await import("@std/assert") as {
   assertEquals: (actual: unknown, expected: unknown) => void;
   assertExists: (actual: unknown) => void;
 };
-const { existsSync } = await import("jsr:@std/fs") as {
+const { existsSync: existsSyncTest } = await import("jsr:@std/fs") as {
   existsSync: (path: string) => boolean;
 };
 
 // テスト用のホームディレクトリを設定
 const TEST_HOME = await Deno.makeTempDir();
 const originalHome = Deno.env.get("HOME");
+const originalXdgConfigHome = Deno.env.get("XDG_CONFIG_HOME");
+const originalXdgDataHome = Deno.env.get("XDG_DATA_HOME");
 
 function setTestHome() {
   Deno.env.set("HOME", TEST_HOME);
+  // XDG環境変数をクリアしてデフォルト値を使用させる
+  Deno.env.delete("XDG_CONFIG_HOME");
+  Deno.env.delete("XDG_DATA_HOME");
 }
 
 function restoreHome() {
@@ -131,6 +127,18 @@ function restoreHome() {
     Deno.env.set("HOME", originalHome);
   } else {
     Deno.env.delete("HOME");
+  }
+  
+  if (originalXdgConfigHome) {
+    Deno.env.set("XDG_CONFIG_HOME", originalXdgConfigHome);
+  } else {
+    Deno.env.delete("XDG_CONFIG_HOME");
+  }
+  
+  if (originalXdgDataHome) {
+    Deno.env.set("XDG_DATA_HOME", originalXdgDataHome);
+  } else {
+    Deno.env.delete("XDG_DATA_HOME");
   }
 }
 
@@ -144,9 +152,9 @@ Deno.test({
       await saveCredentials(testApiKey);
       
       // ファイルが作成されていることを確認
-      const credentialsPath = join(TEST_HOME, ".ai-cli", "credentials");
+      const credentialsPath = join(TEST_HOME, ".local", "share", "ai-cli", "credentials");
       assertExists(credentialsPath);
-      assertEquals(existsSync(credentialsPath), true);
+      assertEquals(existsSyncTest(credentialsPath), true);
       
       // ファイルの権限を確認（Windowsでない場合）
       if (Deno.build.os !== "windows") {
@@ -193,9 +201,13 @@ Deno.test({
   fn: async () => {
     const freshTestHome = await Deno.makeTempDir();
     const originalHome = Deno.env.get("HOME");
+    const originalXdgConfigHome = Deno.env.get("XDG_CONFIG_HOME");
+    const originalXdgDataHome = Deno.env.get("XDG_DATA_HOME");
     
     try {
       Deno.env.set("HOME", freshTestHome);
+      Deno.env.delete("XDG_CONFIG_HOME");
+      Deno.env.delete("XDG_DATA_HOME");
       const credentials = await loadCredentials();
       assertEquals(credentials, null);
     } finally {
@@ -203,6 +215,16 @@ Deno.test({
         Deno.env.set("HOME", originalHome);
       } else {
         Deno.env.delete("HOME");
+      }
+      if (originalXdgConfigHome) {
+        Deno.env.set("XDG_CONFIG_HOME", originalXdgConfigHome);
+      } else {
+        Deno.env.delete("XDG_CONFIG_HOME");
+      }
+      if (originalXdgDataHome) {
+        Deno.env.set("XDG_DATA_HOME", originalXdgDataHome);
+      } else {
+        Deno.env.delete("XDG_DATA_HOME");
       }
       try {
         await Deno.remove(freshTestHome, { recursive: true });
@@ -225,12 +247,12 @@ Deno.test({
       
       // 認証情報を保存
       await saveCredentials(testApiKey);
-      const credentialsPath = join(TEST_HOME, ".ai-cli", "credentials");
-      assertEquals(existsSync(credentialsPath), true);
+      const credentialsPath = join(TEST_HOME, ".local", "share", "ai-cli", "credentials");
+      assertEquals(existsSyncTest(credentialsPath), true);
       
       // 認証情報を削除
       await deleteCredentials();
-      assertEquals(existsSync(credentialsPath), false);
+      assertEquals(existsSyncTest(credentialsPath), false);
     } finally {
       restoreHome();
     }
