@@ -30,6 +30,8 @@ import {
 } from "./core/prompts.ts";
 import { runAuth } from "./cli/auth.ts";
 import { addMcpServer, listMcpServers, removeMcpServer, showMcpHelp } from "./cli/mcp.ts";
+import { selectModel } from "./cli/model-selector.ts";
+import { green } from "./ui/styles.ts";
 
 /**
  * インタラクティブモードの実行
@@ -235,6 +237,17 @@ async function main() {
         default:
           showMcpHelp();
           break;
+      }
+      return;
+    }
+
+    // modelコマンドの処理
+    if (args.mode === "model") {
+      const selectedModel = await selectModel();
+      if (selectedModel) {
+        console.log(green(`✓ デフォルトモデルを ${selectedModel} に設定しました`));
+      } else {
+        info("モデル選択がキャンセルされました");
       }
       return;
     }

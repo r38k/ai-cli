@@ -3,6 +3,7 @@ import { type ParsedArgs } from "./parser.ts";
 import { formatInputContent, readFiles, readStdin } from "./input.ts";
 import { assertEquals } from "https://deno.land/std@0.208.0/assert/mod.ts";
 import { getDefaultModel, MODEL_IDS } from "../api/model.ts";
+import { getDefaultModelFromPreferences } from "../core/preferences.ts";
 
 /**
  * 実行コンテキスト
@@ -29,9 +30,9 @@ export interface ExecutionContext {
 export async function createExecutionContext(
   args: ParsedArgs,
 ): Promise<ExecutionContext> {
-  // authモードとmcpモードは処理しない（型エラー回避）
-  if (args.mode === "auth" || args.mode === "mcp") {
-    throw new Error("Auth and MCP modes should be handled before creating execution context");
+  // authモード、mcpモード、modelモードは処理しない（型エラー回避）
+  if (args.mode === "auth" || args.mode === "mcp" || args.mode === "model") {
+    throw new Error("Auth, MCP, and Model modes should be handled before creating execution context");
   }
 
   // 標準入力を読み取る
@@ -43,11 +44,20 @@ export async function createExecutionContext(
   // 入力内容をフォーマット
   const inputContent = formatInputContent(fileContents, stdinContent);
 
+  // モデル設定の優先順位: コマンドライン引数 > 設定ファイル > デフォルト値
+  const defaultModelFromPrefs = await getDefaultModelFromPreferences();
+  const modelToUse = args.options.model !== getDefaultModel() 
+    ? args.options.model 
+    : defaultModelFromPrefs;
+
   return {
     mode: args.mode as "interactive" | "oneshot",
     prompt: args.prompt,
     inputContent,
-    options: args.options,
+    options: {
+      ...args.options,
+      model: modelToUse,
+    },
   };
 }
 

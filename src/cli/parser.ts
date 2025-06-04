@@ -6,7 +6,7 @@ import { getDefaultModel } from "../api/model.ts";
 /**
  * 実行モード
  */
-export type ExecutionMode = "interactive" | "oneshot" | "auth" | "mcp";
+export type ExecutionMode = "interactive" | "oneshot" | "auth" | "mcp" | "model";
 
 /**
  * パース結果
@@ -51,6 +51,21 @@ export function parseArgs(args: string[]): ParsedArgs {
       mode: "mcp",
       files: [],
       mcpSubcommand: args[1] || "help",
+      options: {
+        help: false,
+        model: getDefaultModel(),
+        maxTokens: 1000,
+        verbose: false,
+        tools: false,
+      },
+    };
+  }
+
+  // modelコマンドの特別処理
+  if (args.length > 0 && args[0] === "model") {
+    return {
+      mode: "model",
+      files: [],
       options: {
         help: false,
         model: getDefaultModel(),
@@ -137,6 +152,7 @@ AI CLI - Gemini AIを使用したコマンドラインツール
   ai [options] [prompt]
   ai auth                認証を設定
   ai mcp <subcommand>    MCP設定を管理
+  ai model               モデルを選択
 
 オプション:
   -f, --file <path>      入力ファイルを指定（複数指定可）
@@ -166,6 +182,9 @@ AI CLI - Gemini AIを使用したコマンドラインツール
   # MCP設定管理
   ai mcp add     # MCPサーバーを追加
   ai mcp list    # 設定済みサーバーを表示
+
+  # モデル選択
+  ai model       # インタラクティブにモデルを選択
 
 必要な権限:
   --allow-env   # カラー出力の検出と開発モードでの環境変数読み込みのため
@@ -217,6 +236,18 @@ Deno.test("parseArgs - mcpコマンド（各サブコマンド）", () => {
     assertEquals(args.mode, "mcp");
     assertEquals(args.mcpSubcommand, subcommand);
   }
+});
+
+Deno.test("parseArgs - modelコマンドをパース", () => {
+  const args = parseArgs(["model"]);
+
+  assertEquals(args.mode, "model");
+  assertEquals(args.files, []);
+  assertEquals(args.options.help, false);
+  assertEquals(args.options.model, getDefaultModel());
+  assertEquals(args.options.maxTokens, 1000);
+  assertEquals(args.options.verbose, false);
+  assertEquals(args.options.tools, false);
 });
 
 Deno.test("showHelp - ヘルプメッセージを表示", () => {

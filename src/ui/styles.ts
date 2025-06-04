@@ -236,3 +236,14 @@ Deno.test("createStyler - 全ての色とスタイル", () => {
     assertEquals(stripAnsiCode(styled), "Test");
   });
 });
+
+// 便利な関数をエクスポート
+const defaultStyler = createStyler();
+export const red = defaultStyler.red;
+export const green = defaultStyler.green;
+export const yellow = defaultStyler.yellow;
+export const blue = defaultStyler.blue;
+export const cyan = defaultStyler.cyan;
+export const gray = defaultStyler.gray;
+export const magenta = defaultStyler.magenta;
+export const dim = defaultStyler.dim().gray;
