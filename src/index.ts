@@ -29,8 +29,14 @@ import {
   DEFAULT_SYSTEM_PROMPT,
 } from "./core/prompts.ts";
 import { runAuth } from "./cli/auth.ts";
-import { addMcpServer, listMcpServers, removeMcpServer, showMcpHelp } from "./cli/mcp.ts";
+import {
+  addMcpServer,
+  listMcpServers,
+  removeMcpServer,
+  showMcpHelp,
+} from "./cli/mcp.ts";
 import { selectModel } from "./cli/model-selector.ts";
+import { selectToolset } from "./cli/toolset-selector.ts";
 import { green } from "./ui/styles.ts";
 
 /**
@@ -46,7 +52,8 @@ async function runInteractiveMode(
 
   // システムプロンプトを設定（カスタムまたはデフォルト）
   const workingDirContext = buildWorkingDirectoryContext();
-  const systemPrompt = context.options.system || DEFAULT_SYSTEM_PROMPT(workingDirContext);
+  const systemPrompt = context.options.system ||
+    DEFAULT_SYSTEM_PROMPT(workingDirContext);
 
   while (true) {
     const input = prompt(">");
@@ -132,7 +139,8 @@ async function runOneshotMode(context: ExecutionContext, mcpClient: Client[]) {
 
   // システムプロンプトを設定（カスタムまたはデフォルト）
   const workingDirContext = buildWorkingDirectoryContext();
-  const systemPrompt = context.options.system || DEFAULT_SYSTEM_PROMPT(workingDirContext);
+  const systemPrompt = context.options.system ||
+    DEFAULT_SYSTEM_PROMPT(workingDirContext);
 
   // プロンプトを構築
   const { userMessage } = buildContextualPrompt(
@@ -187,7 +195,7 @@ async function runOneshotMode(context: ExecutionContext, mcpClient: Client[]) {
     // 残りのバッファを出力
     buffer.flush();
     console.log(); // 最後に改行
-    
+
     if (hasToolCalls) {
       divider();
     }
@@ -245,9 +253,24 @@ async function main() {
     if (args.mode === "model") {
       const selectedModel = await selectModel();
       if (selectedModel) {
-        console.log(green(`✓ デフォルトモデルを ${selectedModel} に設定しました`));
+        console.log(
+          green(`✓ デフォルトモデルを ${selectedModel} に設定しました`),
+        );
       } else {
         info("モデル選択がキャンセルされました");
+      }
+      return;
+    }
+
+    // toolsetコマンドの処理
+    if (args.mode === "toolset") {
+      const selectedToolset = await selectToolset();
+      if (selectedToolset) {
+        console.log(
+          green(`✓ デフォルトツールセットを ${selectedToolset} に設定しました`),
+        );
+      } else {
+        info("ツールセット選択がキャンセルされました");
       }
       return;
     }

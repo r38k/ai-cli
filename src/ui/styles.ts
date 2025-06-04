@@ -1,3 +1,50 @@
+/**
+ * スタイリングシステムモジュール
+ *
+ * ターミナル向けテキストスタイリングの統一APIを提供します。
+ * Kleurライブラリをベースとしつつ、環境変数（NO_COLOR）対応、
+ * TTY検出、チェーン可能なスタイル適用システムを実装しています。
+ *
+ * 主要機能:
+ * - 統一されたスタイラーインターフェース
+ * - 環境変数による自動カラー制御（NO_COLOR, FORCE_COLOR）
+ * - TTY/non-TTY環境の自動判定
+ * - チェーン可能なスタイル適用
+ * - カスタムスタイラー実装のサポート
+ *
+ * サポートカラー:
+ * - red, green, yellow, blue, cyan, gray, magenta
+ *
+ * サポートスタイル:
+ * - bold: 太字
+ * - dim: 薄字
+ * - underline: 下線
+ * - strikethrough: 取り消し線
+ *
+ * 環境変数対応:
+ * - NO_COLOR: カラー出力を無効化（値の内容に関わらず設定されていれば無効）
+ * - FORCE_COLOR: TTY検出に関わらずカラー出力を強制有効化
+ * - TTY検出: Deno.stdout.isTerminal()による自動判定
+ *
+ * 使用方法:
+ * ```typescript
+ * import { createStyler, applyColor } from "./styles.ts";
+ *
+ * const styler = createStyler();
+ * const redText = styler.red("Error message");
+ * const boldBlue = styler.bold().blue("Important");
+ *
+ * // カラー適用ヘルパー
+ * const coloredText = applyColor(styler, "green", "Success");
+ * ```
+ *
+ * 技術仕様:
+ * - Kleur 4.1.5ベースの実装
+ * - ANSIエスケープシーケンス対応
+ * - 環境変数による動的制御
+ * - インターフェース抽象化によるライブラリ交換可能性
+ */
+
 import kleur from "npm:kleur@4.1.5";
 import { assertEquals } from "https://deno.land/std@0.208.0/assert/mod.ts";
 import { stripAnsiCode } from "https://deno.land/std@0.208.0/fmt/colors.ts";
@@ -247,3 +294,130 @@ export const cyan = defaultStyler.cyan;
 export const gray = defaultStyler.gray;
 export const magenta = defaultStyler.magenta;
 export const dim = defaultStyler.dim().gray;
+
+// === デバッグ用サンプル実行 ===
+
+if (import.meta.main) {
+  console.log("=== スタイリングシステム デバッグ ===\n");
+
+  console.log("1. 環境変数の状態確認:");
+  console.log(`NO_COLOR: ${Deno.env.get("NO_COLOR") || "(未設定)"}`);
+  console.log(`FORCE_COLOR: ${Deno.env.get("FORCE_COLOR") || "(未設定)"}`);
+  console.log(`TTY環境: ${Deno.stdout.isTerminal()}`);
+  console.log(`カラー有効: ${shouldUseColor()}`);
+  console.log();
+
+  const styler = createStyler();
+
+  console.log("2. 基本カラーテスト:");
+  const colors = [
+    "red",
+    "green",
+    "yellow",
+    "blue",
+    "cyan",
+    "gray",
+    "magenta",
+  ] as const;
+  for (const color of colors) {
+    const colorFunc = styler[color];
+    console.log(`${colorFunc(`${color}色のテキスト`)}`);
+  }
+  console.log();
+
+  console.log("3. スタイルテスト:");
+  console.log(`通常: ${styler.cyan("Normal text")}`);
+  console.log(`太字: ${styler.bold().cyan("Bold text")}`);
+  console.log(`薄字: ${styler.dim().cyan("Dim text")}`);
+  console.log(`下線: ${styler.underline().cyan("Underlined text")}`);
+  console.log(
+    `取り消し線: ${styler.strikethrough().cyan("Strikethrough text")}`,
+  );
+  console.log();
+
+  console.log("4. チェーンスタイルテスト:");
+  console.log(`太字+赤: ${styler.bold().red("Bold Red")}`);
+  console.log(`薄字+青: ${styler.dim().blue("Dim Blue")}`);
+  console.log(`下線+緑: ${styler.underline().green("Underlined Green")}`);
+  console.log();
+
+  console.log("5. applyColor関数テスト:");
+  for (const color of colors) {
+    const result = applyColor(styler, color, `applyColor ${color}`);
+    console.log(result);
+  }
+  console.log();
+
+  console.log("6. 便利関数テスト:");
+  console.log(`${red("Red便利関数")}`);
+  console.log(`${green("Green便利関数")}`);
+  console.log(`${yellow("Yellow便利関数")}`);
+  console.log(`${blue("Blue便利関数")}`);
+  console.log(`${cyan("Cyan便利関数")}`);
+  console.log(`${gray("Gray便利関数")}`);
+  console.log(`${magenta("Magenta便利関数")}`);
+  console.log(`${dim("Dim便利関数")}`);
+  console.log();
+
+  console.log("7. カスタムスタイラーテスト:");
+  const customStyler: Styler = {
+    red: (text: string) => `[カスタム赤]${text}[/カスタム赤]`,
+    green: (text: string) => `[カスタム緑]${text}[/カスタム緑]`,
+    yellow: (text: string) => `[カスタム黄]${text}[/カスタム黄]`,
+    blue: (text: string) => `[カスタム青]${text}[/カスタム青]`,
+    cyan: (text: string) => `[カスタムシアン]${text}[/カスタムシアン]`,
+    gray: (text: string) => `[カスタム灰]${text}[/カスタム灰]`,
+    magenta: (text: string) => `[カスタム紫]${text}[/カスタム紫]`,
+    bold: () => customStyler,
+    dim: () => customStyler,
+    underline: () => customStyler,
+    strikethrough: () => customStyler,
+  };
+
+  const customStyle = createStyler(customStyler);
+  console.log(`カスタム赤: ${customStyle.red("Custom Red")}`);
+  console.log(`カスタム緑: ${customStyle.green("Custom Green")}`);
+  console.log();
+
+  console.log("8. 環境変数変更テスト:");
+  const originalNoColor = Deno.env.get("NO_COLOR");
+
+  // NO_COLORを一時的に設定
+  console.log("NO_COLORを設定中...");
+  Deno.env.set("NO_COLOR", "1");
+  const noColorStyler = createStyler();
+  console.log(`NO_COLOR有効時: ${noColorStyler.red("この文字は色なし")}`);
+
+  // NO_COLORを元に戻す
+  if (originalNoColor === undefined) {
+    Deno.env.delete("NO_COLOR");
+  } else {
+    Deno.env.set("NO_COLOR", originalNoColor);
+  }
+  console.log(`NO_COLOR復元後: ${createStyler().red("この文字は再び色付き")}`);
+  console.log();
+
+  console.log("9. 対話型カラーテスト:");
+  const runInteractiveTest = prompt("対話型テストを実行しますか？ (y/N):");
+
+  if (runInteractiveTest?.toLowerCase() === "y") {
+    while (true) {
+      const colorInput = prompt(`カラーを選択 (${colors.join("/")}/exit):`);
+
+      if (!colorInput || colorInput === "exit") {
+        console.log("対話型テスト終了");
+        break;
+      }
+
+      if (colors.includes(colorInput as typeof colors[number])) {
+        const text = prompt("表示するテキストを入力:") || "サンプルテキスト";
+        const styledText = applyColor(styler, colorInput, text);
+        console.log(`結果: ${styledText}`);
+      } else {
+        console.log("無効なカラーです。");
+      }
+    }
+  }
+
+  console.log("\nデバッグモード終了");
+}

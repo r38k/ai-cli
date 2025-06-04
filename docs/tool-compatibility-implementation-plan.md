@@ -104,7 +104,9 @@ export interface Preferences {
 /**
  * モデル毎のツール設定を取得
  */
-export async function getToolPreferencesForModel(modelId: ModelId): Promise<string[]> {
+export async function getToolPreferencesForModel(
+  modelId: ModelId,
+): Promise<string[]> {
   const preferences = await loadPreferences();
   return preferences.toolPreferences?.[modelId]?.selectedTools || [];
 }
@@ -113,14 +115,14 @@ export async function getToolPreferencesForModel(modelId: ModelId): Promise<stri
  * モデル毎のツール設定を保存
  */
 export async function setToolPreferencesForModel(
-  modelId: ModelId, 
-  selectedTools: string[]
+  modelId: ModelId,
+  selectedTools: string[],
 ): Promise<void> {
   const preferences = await loadPreferences();
   if (!preferences.toolPreferences) {
     preferences.toolPreferences = {};
   }
-  
+
   preferences.toolPreferences[modelId] = {
     selectedTools: selectedTools as ("codeExecution" | "googleSearch")[],
     lastUpdated: new Date().toISOString(),
@@ -137,11 +139,13 @@ export async function setToolPreferencesForModel(
 モデル選択UIと同様のインターフェース:
 
 ```typescript
-import { green, yellow, cyan, dim } from "../ui/styles.ts";
+import { cyan, dim, green, yellow } from "../ui/styles.ts";
 import { getModelById, type ModelId } from "../api/model.ts";
 import { setToolPreferencesForModel } from "../core/preferences.ts";
 
-export async function selectToolsForModel(modelId: ModelId): Promise<string[] | null> {
+export async function selectToolsForModel(
+  modelId: ModelId,
+): Promise<string[] | null> {
   const model = getModelById(modelId);
   if (!model || model.toolSupport.multiToolSupport) {
     // 複数ツール対応モデルは選択不要
@@ -179,7 +183,10 @@ export async function selectToolsForModel(modelId: ModelId): Promise<string[] | 
 import { getModelById, type ModelId } from "./model.ts";
 import { getToolPreferencesForModel } from "../core/preferences.ts";
 
-async function getToolsForModel(modelId: ModelId, mcp: Client[]): Promise<any[]> {
+async function getToolsForModel(
+  modelId: ModelId,
+  mcp: Client[],
+): Promise<any[]> {
   const model = getModelById(modelId);
   if (!model) return [];
 
@@ -206,8 +213,8 @@ async function getToolsForModel(modelId: ModelId, mcp: Client[]): Promise<any[]>
   } else {
     // 制限付きモデル - 設定から読み込み
     const selectedTools = await getToolPreferencesForModel(modelId);
-    const effectiveTools = selectedTools.length > 0 
-      ? selectedTools 
+    const effectiveTools = selectedTools.length > 0
+      ? selectedTools
       : (model.toolSupport.defaultTools || []);
 
     const builtInTools: any = {};
@@ -236,7 +243,9 @@ async function getToolsForModel(modelId: ModelId, mcp: Client[]): Promise<any[]>
 import { selectToolsForModel } from "./cli/tool-selector.ts";
 import { getToolPreferencesForModel } from "./core/preferences.ts";
 
-async function checkAndPromptToolCompatibility(modelId: ModelId): Promise<void> {
+async function checkAndPromptToolCompatibility(
+  modelId: ModelId,
+): Promise<void> {
   const model = getModelById(modelId);
   if (!model || model.toolSupport.multiToolSupport) {
     return; // 制限なし
@@ -248,13 +257,17 @@ async function checkAndPromptToolCompatibility(modelId: ModelId): Promise<void> 
   }
 
   // ツール選択プロンプト
-  console.log(yellow(`⚠️  ${model.displayName} では複数のツールを同時使用できません`));
+  console.log(
+    yellow(`⚠️  ${model.displayName} では複数のツールを同時使用できません`),
+  );
   console.log("使用するツールを選択してください：");
-  
+
   const selectedTools = await selectToolsForModel(modelId);
   if (selectedTools && selectedTools.length > 0) {
     await setToolPreferencesForModel(modelId, selectedTools);
-    console.log(green(`✓ ツール設定を保存しました: ${selectedTools.join(", ")}`));
+    console.log(
+      green(`✓ ツール設定を保存しました: ${selectedTools.join(", ")}`),
+    );
   }
 }
 ```
@@ -293,7 +306,13 @@ ai tools reset    # ツール設定リセット
 #### 6.2 パーサー拡張 (`src/cli/parser.ts`)
 
 ```typescript
-export type ExecutionMode = "interactive" | "oneshot" | "auth" | "mcp" | "model" | "tools";
+export type ExecutionMode =
+  | "interactive"
+  | "oneshot"
+  | "auth"
+  | "mcp"
+  | "model"
+  | "tools";
 
 // toolsコマンドの処理追加
 if (args.length > 0 && args[0] === "tools") {

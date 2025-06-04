@@ -1,4 +1,25 @@
-// TODO: プロンプトのカスタマイズ
+/**
+ * プロンプト構築モジュール
+ *
+ * AIアシスタントへのプロンプトを構築・管理するコア機能を提供します。
+ * システムプロンプト、ユーザーメッセージ、実行環境コンテキストを統合し、
+ * ファイル内容のフォーマットや言語推定などの補助機能も含みます。
+ *
+ * 主要機能:
+ * - デフォルトシステムプロンプトの生成
+ * - コンテキストベースのプロンプト構築
+ * - 作業ディレクトリ情報の生成
+ * - ファイル内容の言語別フォーマット
+ *
+ * 使用方法:
+ * ```typescript
+ * const { systemPrompt, userMessage } = buildContextualPrompt(
+ *   fileContent,
+ *   "このコードをレビューしてください",
+ *   customSystemPrompt
+ * );
+ * ```
+ */
 
 /**
  * デフォルトのシステムプロンプト（Claude Code風）
@@ -39,7 +60,8 @@ export function buildContextualPrompt(
   customSystemPrompt?: string,
 ): { systemPrompt: string; userMessage: string } {
   const workingDirContext = buildWorkingDirectoryContext();
-  const systemPrompt = customSystemPrompt || DEFAULT_SYSTEM_PROMPT(workingDirContext);
+  const systemPrompt = customSystemPrompt ||
+    DEFAULT_SYSTEM_PROMPT(workingDirContext);
 
   let userMessage = "";
 
@@ -157,4 +179,144 @@ function getLanguageFromExtension(ext: string): string {
   };
 
   return languageMap[ext.toLowerCase()] || ext;
+}
+
+// === テスト ===
+
+Deno.test("buildWorkingDirectoryContext - 実行環境情報を正しく生成", () => {
+  const context = buildWorkingDirectoryContext();
+
+  // 必須情報が含まれているか確認
+  assert(context.includes("## 実行環境情報"));
+  assert(context.includes("作業ディレクトリ:"));
+  assert(context.includes("ホスト名:"));
+  assert(context.includes("OS:"));
+  assert(context.includes("時刻:"));
+
+  // 実際の値が含まれているか
+  assert(context.includes(Deno.cwd()));
+  assert(context.includes(Deno.build.os));
+});
+
+Deno.test("formatFileContent - ファイル内容を適切にフォーマット", () => {
+  const testCases = [
+    {
+      path: "test.ts",
+      content: "const x = 1;",
+      expectedLang: "typescript",
+    },
+    {
+      path: "script.py",
+      content: "print('hello')",
+      expectedLang: "python",
+    },
+    {
+      path: "unknown.xyz",
+      content: "some content",
+      expectedLang: "xyz",
+    },
+  ];
+
+  for (const { path, content, expectedLang } of testCases) {
+    const formatted = formatFileContent(path, content);
+    assert(formatted.includes(`## ファイル: ${path}`));
+    assert(formatted.includes("```" + expectedLang));
+    assert(formatted.includes(content));
+  }
+});
+
+Deno.test("getLanguageFromExtension - 拡張子から言語を正しく推定", () => {
+  const testCases = [
+    { ext: "ts", expected: "typescript" },
+    { ext: "py", expected: "python" },
+    { ext: "rs", expected: "rust" },
+    { ext: "TS", expected: "typescript" }, // 大文字
+    { ext: "unknown", expected: "unknown" }, // 未知の拡張子
+  ];
+
+  for (const { ext, expected } of testCases) {
+    assertEquals(getLanguageFromExtension(ext), expected);
+  }
+});
+
+Deno.test("buildContextualPrompt - プロンプトを正しく構築", () => {
+  // 入力内容とユーザープロンプトの両方がある場合
+  const result1 = buildContextualPrompt(
+    "ファイル内容",
+    "レビューしてください",
+  );
+  assertEquals(result1.userMessage, "ファイル内容\n\nレビューしてください");
+  assert(
+    result1.systemPrompt.includes(
+      "あなたは優秀なプログラミングアシスタントです",
+    ),
+  );
+
+  // 入力内容のみの場合
+  const result2 = buildContextualPrompt("ファイル内容", undefined);
+  assertEquals(result2.userMessage, "ファイル内容");
+
+  // ユーザープロンプトのみの場合
+  const result3 = buildContextualPrompt("", "質問です");
+  assertEquals(result3.userMessage, "質問です");
+
+  // カスタムシステムプロンプトの場合
+  const customPrompt = "カスタムアシスタント";
+  const result4 = buildContextualPrompt("", "test", customPrompt);
+  assertEquals(result4.systemPrompt, customPrompt);
+});
+
+Deno.test("DEFAULT_SYSTEM_PROMPT - 正しい構造を持つ", () => {
+  const prompt = DEFAULT_SYSTEM_PROMPT("テストコンテキスト");
+
+  // 主要セクションが含まれているか
+  assert(prompt.includes("## 基本原則"));
+  assert(prompt.includes("## 回答スタイル"));
+  assert(prompt.includes("## 特別な機能"));
+  assert(prompt.includes("## 倫理的配慮"));
+  assert(prompt.includes("テストコンテキスト"));
+});
+
+// 必要なインポート（テスト用）
+import {
+  assert,
+  assertEquals,
+} from "https://deno.land/std@0.224.0/assert/mod.ts";
+
+// === デバッグ用サンプル実行 ===
+
+if (import.meta.main) {
+  console.log("=== プロンプト構築モジュール デバッグ ===\n");
+
+  // 1. 実行環境コンテキストの生成
+  console.log("1. 実行環境コンテキスト:");
+  console.log(buildWorkingDirectoryContext());
+  console.log("\n" + "=".repeat(50) + "\n");
+
+  // 2. ファイル内容のフォーマット例
+  console.log("2. ファイル内容フォーマット例:");
+  const sampleCode = `function hello(name: string) {
+  console.log(\`Hello, \${name}!\`);
+}`;
+  console.log(formatFileContent("hello.ts", sampleCode));
+  console.log("\n" + "=".repeat(50) + "\n");
+
+  // 3. プロンプト構築例
+  console.log("3. プロンプト構築例:");
+  const { systemPrompt, userMessage } = buildContextualPrompt(
+    sampleCode,
+    "このTypeScriptコードをレビューして、改善点を教えてください。",
+  );
+  console.log("システムプロンプト（最初の200文字）:");
+  console.log(systemPrompt.substring(0, 200) + "...");
+  console.log("\nユーザーメッセージ:");
+  console.log(userMessage);
+  console.log("\n" + "=".repeat(50) + "\n");
+
+  // 4. 言語推定のテスト
+  console.log("4. 各種拡張子の言語推定:");
+  const extensions = ["ts", "py", "rs", "go", "rb", "unknown"];
+  for (const ext of extensions) {
+    console.log(`  .${ext} → ${getLanguageFromExtension(ext)}`);
+  }
 }

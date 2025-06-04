@@ -9,6 +9,7 @@
 ### 1. 現在の実装状況
 
 **ツール設定（`src/api/gemini.ts`）**:
+
 ```typescript
 tools: mcp.length > 0 ? [mcpToTool(...mcp, {}), 
   { codeExecution: {}, googleSearch: {} }, 
@@ -18,6 +19,7 @@ tools: mcp.length > 0 ? [mcpToTool(...mcp, {}),
 ```
 
 **問題**:
+
 - すべてのモデルで同一のツール設定を使用
 - モデル毎のツール互換性チェックが未実装
 
@@ -25,19 +27,20 @@ tools: mcp.length > 0 ? [mcpToTool(...mcp, {}),
 
 #### モデル毎のツール対応状況
 
-| モデル | Code Execution | Google Search | 複数ツール同時使用 |
-|--------|----------------|---------------|-------------------|
-| `gemini-2.0-flash` | ✅ | ✅ | ❌（制限あり） |
-| `gemini-2.0-flash-exp` | ✅ | ✅ | ✅（推定） |
-| `gemini-2.5-flash-preview` | ✅ | ✅ | ✅ |
-| `gemini-2.5-pro-preview` | ✅ | ✅ | ✅ |
-| `gemini-1.5-flash` | ✅ | ✅（検索のみ） | ✅ |
-| `gemini-1.5-pro` | ❌ | ✅（検索のみ） | - |
+| モデル                     | Code Execution | Google Search  | 複数ツール同時使用 |
+| -------------------------- | -------------- | -------------- | ------------------ |
+| `gemini-2.0-flash`         | ✅             | ✅             | ❌（制限あり）     |
+| `gemini-2.0-flash-exp`     | ✅             | ✅             | ✅（推定）         |
+| `gemini-2.5-flash-preview` | ✅             | ✅             | ✅                 |
+| `gemini-2.5-pro-preview`   | ✅             | ✅             | ✅                 |
+| `gemini-1.5-flash`         | ✅             | ✅（検索のみ） | ✅                 |
+| `gemini-1.5-pro`           | ❌             | ✅（検索のみ） | -                  |
 
 #### 重要な発見事項
 
 1. **Gemini 2.0 Flashの制限**:
-   - Google Searchドキュメントに明記: "Combining Search with function calling is not yet supported"
+   - Google Searchドキュメントに明記: "Combining Search with function calling is
+     not yet supported"
    - これは`gemini-2.0-flash`（stable版）に適用される制限と推測
 
 2. **Experimental vs Stable版の違い**:
@@ -188,7 +191,10 @@ function getToolsForModel(modelId: ModelId, mcp: Client[]): any[] {
 ツール互換性エラーの適切な処理:
 
 ```typescript
-function validateToolCompatibility(modelId: ModelId, requestedTools: string[]): void {
+function validateToolCompatibility(
+  modelId: ModelId,
+  requestedTools: string[],
+): void {
   const model = getModelById(modelId);
   if (!model) throw new Error(`Unknown model: ${modelId}`);
 
@@ -196,16 +202,16 @@ function validateToolCompatibility(modelId: ModelId, requestedTools: string[]): 
   if (hasMultipleTools && !model.toolSupport.multiToolSupport) {
     throw new Error(
       `Model ${modelId} does not support multiple tools simultaneously. ` +
-      `Use gemini-2.0-flash-exp or gemini-2.5-flash instead.`
+        `Use gemini-2.0-flash-exp or gemini-2.5-flash instead.`,
     );
   }
 
   // 個別ツール対応チェック
   for (const tool of requestedTools) {
-    if (tool === 'codeExecution' && !model.toolSupport.codeExecution) {
+    if (tool === "codeExecution" && !model.toolSupport.codeExecution) {
       throw new Error(`Model ${modelId} does not support code execution`);
     }
-    if (tool === 'googleSearch' && !model.toolSupport.googleSearch) {
+    if (tool === "googleSearch" && !model.toolSupport.googleSearch) {
       throw new Error(`Model ${modelId} does not support Google Search`);
     }
   }
@@ -220,4 +226,5 @@ function validateToolCompatibility(modelId: ModelId, requestedTools: string[]): 
 2. **実装改善**: モデル毎のツール互換性チェック機能を実装
 3. **ユーザー通知**: 適切なエラーメッセージで制限事項を通知
 
-この制限はGemini APIの仕様によるものであり、将来のアップデートで改善される可能性がある。
+この制限はGemini
+APIの仕様によるものであり、将来のアップデートで改善される可能性がある。

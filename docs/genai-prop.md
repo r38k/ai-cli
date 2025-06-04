@@ -7,21 +7,32 @@
 
 Q. なぜ確率の対数で表すのか？
 
-> ご指摘の通り、LLMの出力において各トークンの「尤もっともらしさ」を表すのに、確率そのものではなく「確率の対数（log probability、logprob）」が使われるのには、いくつかの重要な理由があります。
-> 主な理由は以下の通りです。
-> 数値的安定性（Numerical Stability）/アンダーフロー防止:
-> LLMは次に来る単語（トークン）の確率を予測します。文章が長くなると、各トークンの出現確率は通常1より小さい値なので、これらの確率をすべて掛け合わせると、非常に小さな値になってしまいます（例: 0.1 * 0.2 * 0.05 * ...）。
+> ご指摘の通り、LLMの出力において各トークンの「尤もっともらしさ」を表すのに、確率そのものではなく「確率の対数（log
+> probability、logprob）」が使われるのには、いくつかの重要な理由があります。
+> 主な理由は以下の通りです。 数値的安定性（Numerical
+> Stability）/アンダーフロー防止:
+> LLMは次に来る単語（トークン）の確率を予測します。文章が長くなると、各トークンの出現確率は通常1より小さい値なので、これらの確率をすべて掛け合わせると、非常に小さな値になってしまいます（例:
+> 0.1 * 0.2 * 0.05 * ...）。
 > コンピュータで扱える浮動小数点数には精度限界があり、非常に小さな数を何度も掛け合わせると「アンダーフロー（underflow）」が発生し、結果が0になってしまうことがあります。こうなると、異なる文章の尤度を比較できなくなります。
-> 対数を取ることで、掛け算を足し算に変換できます（log(a*b) = log(a) + log(b)）。足し算は掛け算よりも数値的に安定しており、アンダーフローを起こしにくくなります。確率 p (0 < p ≤ 1) の対数 log(p) は必ず0以下の負の数になり、p が小さいほど log(p) はより大きな負の数（マイナス無限大に近づく）になります。これにより、非常に小さな確率も区別可能な数値として扱えます。
+> 対数を取ることで、掛け算を足し算に変換できます（log(a*b) = log(a) +
+> log(b)）。足し算は掛け算よりも数値的に安定しており、アンダーフローを起こしにくくなります。確率
+> p (0 < p ≤ 1) の対数 log(p) は必ず0以下の負の数になり、p が小さいほど log(p)
+> はより大きな負の数（マイナス無限大に近づく）になります。これにより、非常に小さな確率も区別可能な数値として扱えます。
 > 計算効率:
 > 多数の値を掛け合わせるよりも、足し合わせる方が計算コストが低い場合があります。
 > 情報理論との関連（特に損失関数）:
-> 機械学習、特にLLMの訓練では、「交差エントロピー損失（cross-entropy loss）」のような損失関数がよく使われます。これらの損失関数は、予測確率の対数を含む形で定義されることが一般的です。そのため、モデル内部や評価において対数確率を扱うのは自然な流れです。
+> 機械学習、特にLLMの訓練では、「交差エントロピー損失（cross-entropy
+> loss）」のような損失関数がよく使われます。これらの損失関数は、予測確率の対数を含む形で定義されることが一般的です。そのため、モデル内部や評価において対数確率を扱うのは自然な流れです。
 > 比較の容易さ:
-> 対数確率は単調増加関数（底が1より大きい場合）なので、確率の大小関係と対数確率の大小関係は一致します。つまり、p1 > p2 ならば log(p1) > log(p2) です。したがって、対数確率で比較しても問題ありません。
-> 引用文にある「logprobが0の場合、モデルがトークンについて確信していることを意味します」というのは、確率が1（100%）のとき log(1) = 0 となることに対応しています。また、「その値がより負の値であるほど、モデルによってトークンが考慮される可能性が低くなります」というのは、確率が0に近づくほど対数確率はマイナス無限大に近づく性質を反映しています。
-> このように、確率の対数（logprob）を使用することは、LLMが長いシーケンスの確率を扱い、学習し、評価する上で非常に実用的かつ数学的に便利な方法なのです。
-> *Gemini 2.5 Pro 05-06*
+> 対数確率は単調増加関数（底が1より大きい場合）なので、確率の大小関係と対数確率の大小関係は一致します。つまり、p1
+>
+>> p2 ならば log(p1) > log(p2)
+>> です。したがって、対数確率で比較しても問題ありません。
+>> 引用文にある「logprobが0の場合、モデルがトークンについて確信していることを意味します」というのは、確率が1（100%）のとき
+>> log(1) = 0
+>> となることに対応しています。また、「その値がより負の値であるほど、モデルによってトークンが考慮される可能性が低くなります」というのは、確率が0に近づくほど対数確率はマイナス無限大に近づく性質を反映しています。
+>> このように、確率の対数（logprob）を使用することは、LLMが長いシーケンスの確率を扱い、学習し、評価する上で非常に実用的かつ数学的に便利な方法なのです。
+>> _Gemini 2.5 Pro 05-06_
 
 つまるところ，推論の計算上都合が良いということのようです．
 数学的に対数を取っても結果(確率の高低)が変わらないので，より正確で楽な方を選ぶということです．
@@ -39,7 +50,8 @@ TopK, TopPも同様です．
 
 ## 各SDKの推論オプション
 
-主要なLLM Providerである，OpenAI，Anthropic，Googleの推論オプションを確認してみます．
+主要なLLM
+Providerである，OpenAI，Anthropic，Googleの推論オプションを確認してみます．
 
 ### OpenAI
 
@@ -100,7 +112,7 @@ export interface ChatCompletionCreateParamsBase {
    * `none` is the default when no functions are present. `auto` is the default if
    * functions are present.
    */
-  function_call?: 'none' | 'auto' | ChatCompletionFunctionCallOption;
+  function_call?: "none" | "auto" | ChatCompletionFunctionCallOption;
 
   /**
    * @deprecated Deprecated in favor of `tools`.
@@ -168,7 +180,7 @@ export interface ChatCompletionCreateParamsBase {
    *
    * `["text", "audio"]`
    */
-  modalities?: Array<'text' | 'audio'> | null;
+  modalities?: Array<"text" | "audio"> | null;
 
   /**
    * How many chat completion choices to generate for each input message. Note that
@@ -252,7 +264,7 @@ export interface ChatCompletionCreateParamsBase {
    * When this parameter is set, the response body will include the `service_tier`
    * utilized.
    */
-  service_tier?: 'auto' | 'default' | 'flex' | null;
+  service_tier?: "auto" | "default" | "flex" | null;
 
   /**
    * Not supported with latest reasoning models `o3` and `o4-mini`.
@@ -350,22 +362,22 @@ export interface ChatCompletionCreateParamsBase {
 
 `@openai/openai`で使用可能な推論オプションは以下の通りです．
 
-* `frequency_penalty`
-* `logit_bias`
-* `logprobs`
-* `max_completion_tokens`
-* `max_tokens`
-* `metadata`
-* `n`
-* `parallel_tool_calls`
-* `presence_penalty`
-* `reasoning_effort`
-* `response_format`
-* `seed`
-* `stop`
-* `temperature`
-* `top_logprobs`
-* `top_p`
+- `frequency_penalty`
+- `logit_bias`
+- `logprobs`
+- `max_completion_tokens`
+- `max_tokens`
+- `metadata`
+- `n`
+- `parallel_tool_calls`
+- `presence_penalty`
+- `reasoning_effort`
+- `response_format`
+- `seed`
+- `stop`
+- `temperature`
+- `top_logprobs`
+- `top_p`
 
 ### Google
 
@@ -382,72 +394,72 @@ export interface ChatCompletionCreateParamsBase {
  <https://cloud.google.com/vertex-ai/generative-ai/docs/multimodal/content-generation-parameters>`_.
  */
 export declare interface GenerateContentConfig {
-    /** Used to override HTTP request options. */
-    httpOptions?: HttpOptions;
-    /** Abort signal which can be used to cancel the request.
+  /** Used to override HTTP request options. */
+  httpOptions?: HttpOptions;
+  /** Abort signal which can be used to cancel the request.
 
      NOTE: AbortSignal is a client-only operation. Using it to cancel an
      operation will not cancel the request in the service. You will still
      be charged usage for any applicable operations.
      */
-    abortSignal?: AbortSignal;
-    /** Instructions for the model to steer it toward better performance.
+  abortSignal?: AbortSignal;
+  /** Instructions for the model to steer it toward better performance.
      For example, "Answer as concisely as possible" or "Don't use technical
      terms in your response".
      */
-    systemInstruction?: ContentUnion;
-    /** Value that controls the degree of randomness in token selection.
+  systemInstruction?: ContentUnion;
+  /** Value that controls the degree of randomness in token selection.
      Lower temperatures are good for prompts that require a less open-ended or
      creative response, while higher temperatures can lead to more diverse or
      creative results.
      */
-    temperature?: number;
-    /** Tokens are selected from the most to least probable until the sum
+  temperature?: number;
+  /** Tokens are selected from the most to least probable until the sum
      of their probabilities equals this value. Use a lower value for less
      random responses and a higher value for more random responses.
      */
-    topP?: number;
-    /** For each token selection step, the ``top_k`` tokens with the
+  topP?: number;
+  /** For each token selection step, the ``top_k`` tokens with the
      highest probabilities are sampled. Then tokens are further filtered based
      on ``top_p`` with the final token selected using temperature sampling. Use
      a lower number for less random responses and a higher number for more
      random responses.
      */
-    topK?: number;
-    /** Number of response variations to return.
-     */
-    candidateCount?: number;
-    /** Maximum number of tokens that can be generated in the response.
-     */
-    maxOutputTokens?: number;
-    /** List of strings that tells the model to stop generating text if one
+  topK?: number;
+  /** Number of response variations to return.
+   */
+  candidateCount?: number;
+  /** Maximum number of tokens that can be generated in the response.
+   */
+  maxOutputTokens?: number;
+  /** List of strings that tells the model to stop generating text if one
      of the strings is encountered in the response.
      */
-    stopSequences?: string[];
-    /** Whether to return the log probabilities of the tokens that were
+  stopSequences?: string[];
+  /** Whether to return the log probabilities of the tokens that were
      chosen by the model at each step.
      */
-    responseLogprobs?: boolean;
-    /** Number of top candidate tokens to return the log probabilities for
+  responseLogprobs?: boolean;
+  /** Number of top candidate tokens to return the log probabilities for
      at each generation step.
      */
-    logprobs?: number;
-    /** Positive values penalize tokens that already appear in the
+  logprobs?: number;
+  /** Positive values penalize tokens that already appear in the
      generated text, increasing the probability of generating more diverse
      content.
      */
-    presencePenalty?: number;
-    /** Positive values penalize tokens that repeatedly appear in the
+  presencePenalty?: number;
+  /** Positive values penalize tokens that repeatedly appear in the
      generated text, increasing the probability of generating more diverse
      content.
      */
-    frequencyPenalty?: number;
-    /** When ``seed`` is fixed to a specific number, the model makes a best
+  frequencyPenalty?: number;
+  /** When ``seed`` is fixed to a specific number, the model makes a best
      effort to provide the same response for repeated requests. By default, a
      random number is used.
      */
-    seed?: number;
-    /** Output response mimetype of the generated candidate text.
+  seed?: number;
+  /** Output response mimetype of the generated candidate text.
      Supported mimetype:
      - `text/plain`: (default) Text output.
      - `application/json`: JSON response in the candidates.
@@ -455,58 +467,58 @@ export declare interface GenerateContentConfig {
      otherwise the behavior is undefined.
      This is a preview feature.
      */
-    responseMimeType?: string;
-    /** The `Schema` object allows the definition of input and output data types.
+  responseMimeType?: string;
+  /** The `Schema` object allows the definition of input and output data types.
      These types can be objects, but also primitives and arrays.
      Represents a select subset of an [OpenAPI 3.0 schema
      object](https://spec.openapis.org/oas/v3.0.3#schema).
      If set, a compatible response_mime_type must also be set.
      Compatible mimetypes: `application/json`: Schema for JSON response.
      */
-    responseSchema?: SchemaUnion;
-    /** Configuration for model router requests.
-     */
-    routingConfig?: GenerationConfigRoutingConfig;
-    /** Configuration for model selection.
-     */
-    modelSelectionConfig?: ModelSelectionConfig;
-    /** Safety settings in the request to block unsafe content in the
+  responseSchema?: SchemaUnion;
+  /** Configuration for model router requests.
+   */
+  routingConfig?: GenerationConfigRoutingConfig;
+  /** Configuration for model selection.
+   */
+  modelSelectionConfig?: ModelSelectionConfig;
+  /** Safety settings in the request to block unsafe content in the
      response.
      */
-    safetySettings?: SafetySetting[];
-    /** Code that enables the system to interact with external systems to
+  safetySettings?: SafetySetting[];
+  /** Code that enables the system to interact with external systems to
      perform an action outside of the knowledge and scope of the model.
      */
-    tools?: ToolListUnion;
-    /** Associates model output to a specific function call.
-     */
-    toolConfig?: ToolConfig;
-    /** Labels with user-defined metadata to break down billed charges. */
-    labels?: Record<string, string>;
-    /** Resource name of a context cache that can be used in subsequent
+  tools?: ToolListUnion;
+  /** Associates model output to a specific function call.
+   */
+  toolConfig?: ToolConfig;
+  /** Labels with user-defined metadata to break down billed charges. */
+  labels?: Record<string, string>;
+  /** Resource name of a context cache that can be used in subsequent
      requests.
      */
-    cachedContent?: string;
-    /** The requested modalities of the response. Represents the set of
+  cachedContent?: string;
+  /** The requested modalities of the response. Represents the set of
      modalities that the model can return.
      */
-    responseModalities?: string[];
-    /** If specified, the media resolution specified will be used.
-     */
-    mediaResolution?: MediaResolution;
-    /** The speech generation configuration.
-     */
-    speechConfig?: SpeechConfigUnion;
-    /** If enabled, audio timestamp will be included in the request to the
+  responseModalities?: string[];
+  /** If specified, the media resolution specified will be used.
+   */
+  mediaResolution?: MediaResolution;
+  /** The speech generation configuration.
+   */
+  speechConfig?: SpeechConfigUnion;
+  /** If enabled, audio timestamp will be included in the request to the
      model.
      */
-    audioTimestamp?: boolean;
-    /** The configuration for automatic function calling.
-     */
-    automaticFunctionCalling?: AutomaticFunctionCallingConfig;
-    /** The thinking features configuration.
-     */
-    thinkingConfig?: ThinkingConfig;
+  audioTimestamp?: boolean;
+  /** The configuration for automatic function calling.
+   */
+  automaticFunctionCalling?: AutomaticFunctionCallingConfig;
+  /** The thinking features configuration.
+   */
+  thinkingConfig?: ThinkingConfig;
 }
 ```
 
@@ -514,26 +526,26 @@ export declare interface GenerateContentConfig {
 
 `@google/genai`で使用可能な推論オプションは以下の通りです．
 
-* `temperature`
-* `topP`
-* `topK`
-* `candidateCount`
-* `maxOutputTokens`
-* `stopSequences`
-* `responseLogprobs`
-* `logprobs`
-* `presencePenalty`
-* `frequencyPenalty`
-* `seed`
-* `responseMimeType`
-* `responseSchema`
-* `routingConfig`
-* `modelSelectionConfig`
-* `safetySettings`
-* `toolConfig`
-* `labels`
-* `responseModalities`
-* `thinkingConfig`
+- `temperature`
+- `topP`
+- `topK`
+- `candidateCount`
+- `maxOutputTokens`
+- `stopSequences`
+- `responseLogprobs`
+- `logprobs`
+- `presencePenalty`
+- `frequencyPenalty`
+- `seed`
+- `responseMimeType`
+- `responseSchema`
+- `routingConfig`
+- `modelSelectionConfig`
+- `safetySettings`
+- `toolConfig`
+- `labels`
+- `responseModalities`
+- `thinkingConfig`
 
 ### Anthropic
 
@@ -542,294 +554,292 @@ export declare interface GenerateContentConfig {
 <details>
 <summary>オプションの型定義</summary>
 
-```ts
+````ts
 export interface MessageCreateParamsBase {
-    /**
-     * The maximum number of tokens to generate before stopping.
-     *
-     * Note that our models may stop _before_ reaching this maximum. This parameter
-     * only specifies the absolute maximum number of tokens to generate.
-     *
-     * Different models have different maximum values for this parameter. See
-     * [models](https://docs.anthropic.com/en/docs/models-overview) for details.
-     */
-    max_tokens: number;
-    /**
-     * Input messages.
-     *
-     * Our models are trained to operate on alternating `user` and `assistant`
-     * conversational turns. When creating a new `Message`, you specify the prior
-     * conversational turns with the `messages` parameter, and the model then generates
-     * the next `Message` in the conversation. Consecutive `user` or `assistant` turns
-     * in your request will be combined into a single turn.
-     *
-     * Each input message must be an object with a `role` and `content`. You can
-     * specify a single `user`-role message, or you can include multiple `user` and
-     * `assistant` messages.
-     *
-     * If the final message uses the `assistant` role, the response content will
-     * continue immediately from the content in that message. This can be used to
-     * constrain part of the model's response.
-     *
-     * Example with a single `user` message:
-     *
-     * ```json
-     * [{ "role": "user", "content": "Hello, Claude" }]
-     * ```
-     *
-     * Example with multiple conversational turns:
-     *
-     * ```json
-     * [
-     *   { "role": "user", "content": "Hello there." },
-     *   { "role": "assistant", "content": "Hi, I'm Claude. How can I help you?" },
-     *   { "role": "user", "content": "Can you explain LLMs in plain English?" }
-     * ]
-     * ```
-     *
-     * Example with a partially-filled response from Claude:
-     *
-     * ```json
-     * [
-     *   {
-     *     "role": "user",
-     *     "content": "What's the Greek name for Sun? (A) Sol (B) Helios (C) Sun"
-     *   },
-     *   { "role": "assistant", "content": "The best answer is (" }
-     * ]
-     * ```
-     *
-     * Each input message `content` may be either a single `string` or an array of
-     * content blocks, where each block has a specific `type`. Using a `string` for
-     * `content` is shorthand for an array of one content block of type `"text"`. The
-     * following input messages are equivalent:
-     *
-     * ```json
-     * { "role": "user", "content": "Hello, Claude" }
-     * ```
-     *
-     * ```json
-     * { "role": "user", "content": [{ "type": "text", "text": "Hello, Claude" }] }
-     * ```
-     *
-     * Starting with Claude 3 models, you can also send image content blocks:
-     *
-     * ```json
-     * {
-     *   "role": "user",
-     *   "content": [
-     *     {
-     *       "type": "image",
-     *       "source": {
-     *         "type": "base64",
-     *         "media_type": "image/jpeg",
-     *         "data": "/9j/4AAQSkZJRg..."
-     *       }
-     *     },
-     *     { "type": "text", "text": "What is in this image?" }
-     *   ]
-     * }
-     * ```
-     *
-     * We currently support the `base64` source type for images, and the `image/jpeg`,
-     * `image/png`, `image/gif`, and `image/webp` media types.
-     *
-     * See [examples](https://docs.anthropic.com/en/api/messages-examples#vision) for
-     * more input examples.
-     *
-     * Note that if you want to include a
-     * [system prompt](https://docs.anthropic.com/en/docs/system-prompts), you can use
-     * the top-level `system` parameter — there is no `"system"` role for input
-     * messages in the Messages API.
-     *
-     * There is a limit of 100000 messages in a single request.
-     */
-    messages: Array<MessageParam>;
-    /**
-     * The model that will complete your prompt.\n\nSee
-     * [models](https://docs.anthropic.com/en/docs/models-overview) for additional
-     * details and options.
-     */
-    model: Model;
-    /**
-     * An object describing metadata about the request.
-     */
-    metadata?: Metadata;
-    /**
-     * Determines whether to use priority capacity (if available) or standard capacity
-     * for this request.
-     *
-     * Anthropic offers different levels of service for your API requests. See
-     * [service-tiers](https://docs.anthropic.com/en/api/service-tiers) for details.
-     */
-    service_tier?: 'auto' | 'standard_only';
-    /**
-     * Custom text sequences that will cause the model to stop generating.
-     *
-     * Our models will normally stop when they have naturally completed their turn,
-     * which will result in a response `stop_reason` of `"end_turn"`.
-     *
-     * If you want the model to stop generating when it encounters custom strings of
-     * text, you can use the `stop_sequences` parameter. If the model encounters one of
-     * the custom sequences, the response `stop_reason` value will be `"stop_sequence"`
-     * and the response `stop_sequence` value will contain the matched stop sequence.
-     */
-    stop_sequences?: Array<string>;
-    /**
-     * Whether to incrementally stream the response using server-sent events.
-     *
-     * See [streaming](https://docs.anthropic.com/en/api/messages-streaming) for
-     * details.
-     */
-    stream?: boolean;
-    /**
-     * System prompt.
-     *
-     * A system prompt is a way of providing context and instructions to Claude, such
-     * as specifying a particular goal or role. See our
-     * [guide to system prompts](https://docs.anthropic.com/en/docs/system-prompts).
-     */
-    system?: string | Array<TextBlockParam>;
-    /**
-     * Amount of randomness injected into the response.
-     *
-     * Defaults to `1.0`. Ranges from `0.0` to `1.0`. Use `temperature` closer to `0.0`
-     * for analytical / multiple choice, and closer to `1.0` for creative and
-     * generative tasks.
-     *
-     * Note that even with `temperature` of `0.0`, the results will not be fully
-     * deterministic.
-     */
-    temperature?: number;
-    /**
-     * Configuration for enabling Claude's extended thinking.
-     *
-     * When enabled, responses include `thinking` content blocks showing Claude's
-     * thinking process before the final answer. Requires a minimum budget of 1,024
-     * tokens and counts towards your `max_tokens` limit.
-     *
-     * See
-     * [extended thinking](https://docs.anthropic.com/en/docs/build-with-claude/extended-thinking)
-     * for details.
-     */
-    thinking?: ThinkingConfigParam;
-    /**
-     * How the model should use the provided tools. The model can use a specific tool,
-     * any available tool, decide by itself, or not use tools at all.
-     */
-    tool_choice?: ToolChoice;
-    /**
-     * Definitions of tools that the model may use.
-     *
-     * If you include `tools` in your API request, the model may return `tool_use`
-     * content blocks that represent the model's use of those tools. You can then run
-     * those tools using the tool input generated by the model and then optionally
-     * return results back to the model using `tool_result` content blocks.
-     *
-     * Each tool definition includes:
-     *
-     * - `name`: Name of the tool.
-     * - `description`: Optional, but strongly-recommended description of the tool.
-     * - `input_schema`: [JSON schema](https://json-schema.org/draft/2020-12) for the
-     *   tool `input` shape that the model will produce in `tool_use` output content
-     *   blocks.
-     *
-     * For example, if you defined `tools` as:
-     *
-     * ```json
-     * [
-     *   {
-     *     "name": "get_stock_price",
-     *     "description": "Get the current stock price for a given ticker symbol.",
-     *     "input_schema": {
-     *       "type": "object",
-     *       "properties": {
-     *         "ticker": {
-     *           "type": "string",
-     *           "description": "The stock ticker symbol, e.g. AAPL for Apple Inc."
-     *         }
-     *       },
-     *       "required": ["ticker"]
-     *     }
-     *   }
-     * ]
-     * ```
-     *
-     * And then asked the model "What's the S&P 500 at today?", the model might produce
-     * `tool_use` content blocks in the response like this:
-     *
-     * ```json
-     * [
-     *   {
-     *     "type": "tool_use",
-     *     "id": "toolu_01D7FLrfh4GYq7yT1ULFeyMV",
-     *     "name": "get_stock_price",
-     *     "input": { "ticker": "^GSPC" }
-     *   }
-     * ]
-     * ```
-     *
-     * You might then run your `get_stock_price` tool with `{"ticker": "^GSPC"}` as an
-     * input, and return the following back to the model in a subsequent `user`
-     * message:
-     *
-     * ```json
-     * [
-     *   {
-     *     "type": "tool_result",
-     *     "tool_use_id": "toolu_01D7FLrfh4GYq7yT1ULFeyMV",
-     *     "content": "259.75 USD"
-     *   }
-     * ]
-     * ```
-     *
-     * Tools can be used for workflows that include running client-side tools and
-     * functions, or more generally whenever you want the model to produce a particular
-     * JSON structure of output.
-     *
-     * See our [guide](https://docs.anthropic.com/en/docs/tool-use) for more details.
-     */
-    tools?: Array<ToolUnion>;
-    /**
-     * Only sample from the top K options for each subsequent token.
-     *
-     * Used to remove "long tail" low probability responses.
-     * [Learn more technical details here](https://towardsdatascience.com/how-to-sample-from-language-models-682bceb97277).
-     *
-     * Recommended for advanced use cases only. You usually only need to use
-     * `temperature`.
-     */
-    top_k?: number;
-    /**
-     * Use nucleus sampling.
-     *
-     * In nucleus sampling, we compute the cumulative distribution over all the options
-     * for each subsequent token in decreasing probability order and cut it off once it
-     * reaches a particular probability specified by `top_p`. You should either alter
-     * `temperature` or `top_p`, but not both.
-     *
-     * Recommended for advanced use cases only. You usually only need to use
-     * `temperature`.
-     */
-    top_p?: number;
+  /**
+   * The maximum number of tokens to generate before stopping.
+   *
+   * Note that our models may stop _before_ reaching this maximum. This parameter
+   * only specifies the absolute maximum number of tokens to generate.
+   *
+   * Different models have different maximum values for this parameter. See
+   * [models](https://docs.anthropic.com/en/docs/models-overview) for details.
+   */
+  max_tokens: number;
+  /**
+   * Input messages.
+   *
+   * Our models are trained to operate on alternating `user` and `assistant`
+   * conversational turns. When creating a new `Message`, you specify the prior
+   * conversational turns with the `messages` parameter, and the model then generates
+   * the next `Message` in the conversation. Consecutive `user` or `assistant` turns
+   * in your request will be combined into a single turn.
+   *
+   * Each input message must be an object with a `role` and `content`. You can
+   * specify a single `user`-role message, or you can include multiple `user` and
+   * `assistant` messages.
+   *
+   * If the final message uses the `assistant` role, the response content will
+   * continue immediately from the content in that message. This can be used to
+   * constrain part of the model's response.
+   *
+   * Example with a single `user` message:
+   *
+   * ```json
+   * [{ "role": "user", "content": "Hello, Claude" }]
+   * ```
+   *
+   * Example with multiple conversational turns:
+   *
+   * ```json
+   * [
+   *   { "role": "user", "content": "Hello there." },
+   *   { "role": "assistant", "content": "Hi, I'm Claude. How can I help you?" },
+   *   { "role": "user", "content": "Can you explain LLMs in plain English?" }
+   * ]
+   * ```
+   *
+   * Example with a partially-filled response from Claude:
+   *
+   * ```json
+   * [
+   *   {
+   *     "role": "user",
+   *     "content": "What's the Greek name for Sun? (A) Sol (B) Helios (C) Sun"
+   *   },
+   *   { "role": "assistant", "content": "The best answer is (" }
+   * ]
+   * ```
+   *
+   * Each input message `content` may be either a single `string` or an array of
+   * content blocks, where each block has a specific `type`. Using a `string` for
+   * `content` is shorthand for an array of one content block of type `"text"`. The
+   * following input messages are equivalent:
+   *
+   * ```json
+   * { "role": "user", "content": "Hello, Claude" }
+   * ```
+   *
+   * ```json
+   * { "role": "user", "content": [{ "type": "text", "text": "Hello, Claude" }] }
+   * ```
+   *
+   * Starting with Claude 3 models, you can also send image content blocks:
+   *
+   * ```json
+   * {
+   *   "role": "user",
+   *   "content": [
+   *     {
+   *       "type": "image",
+   *       "source": {
+   *         "type": "base64",
+   *         "media_type": "image/jpeg",
+   *         "data": "/9j/4AAQSkZJRg..."
+   *       }
+   *     },
+   *     { "type": "text", "text": "What is in this image?" }
+   *   ]
+   * }
+   * ```
+   *
+   * We currently support the `base64` source type for images, and the `image/jpeg`,
+   * `image/png`, `image/gif`, and `image/webp` media types.
+   *
+   * See [examples](https://docs.anthropic.com/en/api/messages-examples#vision) for
+   * more input examples.
+   *
+   * Note that if you want to include a
+   * [system prompt](https://docs.anthropic.com/en/docs/system-prompts), you can use
+   * the top-level `system` parameter — there is no `"system"` role for input
+   * messages in the Messages API.
+   *
+   * There is a limit of 100000 messages in a single request.
+   */
+  messages: Array<MessageParam>;
+  /**
+   * The model that will complete your prompt.\n\nSee
+   * [models](https://docs.anthropic.com/en/docs/models-overview) for additional
+   * details and options.
+   */
+  model: Model;
+  /**
+   * An object describing metadata about the request.
+   */
+  metadata?: Metadata;
+  /**
+   * Determines whether to use priority capacity (if available) or standard capacity
+   * for this request.
+   *
+   * Anthropic offers different levels of service for your API requests. See
+   * [service-tiers](https://docs.anthropic.com/en/api/service-tiers) for details.
+   */
+  service_tier?: "auto" | "standard_only";
+  /**
+   * Custom text sequences that will cause the model to stop generating.
+   *
+   * Our models will normally stop when they have naturally completed their turn,
+   * which will result in a response `stop_reason` of `"end_turn"`.
+   *
+   * If you want the model to stop generating when it encounters custom strings of
+   * text, you can use the `stop_sequences` parameter. If the model encounters one of
+   * the custom sequences, the response `stop_reason` value will be `"stop_sequence"`
+   * and the response `stop_sequence` value will contain the matched stop sequence.
+   */
+  stop_sequences?: Array<string>;
+  /**
+   * Whether to incrementally stream the response using server-sent events.
+   *
+   * See [streaming](https://docs.anthropic.com/en/api/messages-streaming) for
+   * details.
+   */
+  stream?: boolean;
+  /**
+   * System prompt.
+   *
+   * A system prompt is a way of providing context and instructions to Claude, such
+   * as specifying a particular goal or role. See our
+   * [guide to system prompts](https://docs.anthropic.com/en/docs/system-prompts).
+   */
+  system?: string | Array<TextBlockParam>;
+  /**
+   * Amount of randomness injected into the response.
+   *
+   * Defaults to `1.0`. Ranges from `0.0` to `1.0`. Use `temperature` closer to `0.0`
+   * for analytical / multiple choice, and closer to `1.0` for creative and
+   * generative tasks.
+   *
+   * Note that even with `temperature` of `0.0`, the results will not be fully
+   * deterministic.
+   */
+  temperature?: number;
+  /**
+   * Configuration for enabling Claude's extended thinking.
+   *
+   * When enabled, responses include `thinking` content blocks showing Claude's
+   * thinking process before the final answer. Requires a minimum budget of 1,024
+   * tokens and counts towards your `max_tokens` limit.
+   *
+   * See
+   * [extended thinking](https://docs.anthropic.com/en/docs/build-with-claude/extended-thinking)
+   * for details.
+   */
+  thinking?: ThinkingConfigParam;
+  /**
+   * How the model should use the provided tools. The model can use a specific tool,
+   * any available tool, decide by itself, or not use tools at all.
+   */
+  tool_choice?: ToolChoice;
+  /**
+   * Definitions of tools that the model may use.
+   *
+   * If you include `tools` in your API request, the model may return `tool_use`
+   * content blocks that represent the model's use of those tools. You can then run
+   * those tools using the tool input generated by the model and then optionally
+   * return results back to the model using `tool_result` content blocks.
+   *
+   * Each tool definition includes:
+   *
+   * - `name`: Name of the tool.
+   * - `description`: Optional, but strongly-recommended description of the tool.
+   * - `input_schema`: [JSON schema](https://json-schema.org/draft/2020-12) for the
+   *   tool `input` shape that the model will produce in `tool_use` output content
+   *   blocks.
+   *
+   * For example, if you defined `tools` as:
+   *
+   * ```json
+   * [
+   *   {
+   *     "name": "get_stock_price",
+   *     "description": "Get the current stock price for a given ticker symbol.",
+   *     "input_schema": {
+   *       "type": "object",
+   *       "properties": {
+   *         "ticker": {
+   *           "type": "string",
+   *           "description": "The stock ticker symbol, e.g. AAPL for Apple Inc."
+   *         }
+   *       },
+   *       "required": ["ticker"]
+   *     }
+   *   }
+   * ]
+   * ```
+   *
+   * And then asked the model "What's the S&P 500 at today?", the model might produce
+   * `tool_use` content blocks in the response like this:
+   *
+   * ```json
+   * [
+   *   {
+   *     "type": "tool_use",
+   *     "id": "toolu_01D7FLrfh4GYq7yT1ULFeyMV",
+   *     "name": "get_stock_price",
+   *     "input": { "ticker": "^GSPC" }
+   *   }
+   * ]
+   * ```
+   *
+   * You might then run your `get_stock_price` tool with `{"ticker": "^GSPC"}` as an
+   * input, and return the following back to the model in a subsequent `user`
+   * message:
+   *
+   * ```json
+   * [
+   *   {
+   *     "type": "tool_result",
+   *     "tool_use_id": "toolu_01D7FLrfh4GYq7yT1ULFeyMV",
+   *     "content": "259.75 USD"
+   *   }
+   * ]
+   * ```
+   *
+   * Tools can be used for workflows that include running client-side tools and
+   * functions, or more generally whenever you want the model to produce a particular
+   * JSON structure of output.
+   *
+   * See our [guide](https://docs.anthropic.com/en/docs/tool-use) for more details.
+   */
+  tools?: Array<ToolUnion>;
+  /**
+   * Only sample from the top K options for each subsequent token.
+   *
+   * Used to remove "long tail" low probability responses.
+   * [Learn more technical details here](https://towardsdatascience.com/how-to-sample-from-language-models-682bceb97277).
+   *
+   * Recommended for advanced use cases only. You usually only need to use
+   * `temperature`.
+   */
+  top_k?: number;
+  /**
+   * Use nucleus sampling.
+   *
+   * In nucleus sampling, we compute the cumulative distribution over all the options
+   * for each subsequent token in decreasing probability order and cut it off once it
+   * reaches a particular probability specified by `top_p`. You should either alter
+   * `temperature` or `top_p`, but not both.
+   *
+   * Recommended for advanced use cases only. You usually only need to use
+   * `temperature`.
+   */
+  top_p?: number;
 }
-```
+````
 
 </details>
 
 `@anthropic-ai/sdk`で使用可能な推論オプションは以下の通りです．
 
-* `max_tokens`
-* `metadata`
-* `service_tier`
-* `stop_sequences`
-* `temperature`
-* `thinking`
-* `tool_choice`
-* `top_k`
-* `top_p`
-
-
+- `max_tokens`
+- `metadata`
+- `service_tier`
+- `stop_sequences`
+- `temperature`
+- `thinking`
+- `tool_choice`
+- `top_k`
+- `top_p`
 
 ## 各SDKの共通オプション
 
@@ -837,25 +847,25 @@ export interface MessageCreateParamsBase {
 
 3つのSDKで共通して利用可能なオプションは以下の通りです．
 
-* `temperature`
-    * モデルが生成するトークンのランダム性を制御する
-    * 0 ~ 2の間で設定可能
-    * 0に近いほど確率の高いトークンを選択し，2に近いほどランダムにトークンを選択する
-    * 通常は0.7 ~ 1.0 程度
-* `top_p`
-    * 確率の合計がpを超えるまで，確率の高いトークンを選び，その中から次のトークンを選択する
-    * `temperature`の代替手法であり，どちらか一方を設定する
-    * 基本的には`temperature`を設定する
-* `max_tokens`
-    * モデルが生成可能な最大トークン数
-    * 出力トークン数がこの値を超えると、出力は途中で停止する
-    * 設定可能な最大値はモデルによって異なります
-* `stop`
-    * モデルがトークンの生成を停止するシーケンス
-    * 指定した文字列がトークンの生成中に出現すると、出力を停止する
-* `tool_choice`
-    * モデルが使用するツールをどのように決定するか
-    * `auto`に設定するとモデルが使用するツールを選択する
+- `temperature`
+  - モデルが生成するトークンのランダム性を制御する
+  - 0 ~ 2の間で設定可能
+  - 0に近いほど確率の高いトークンを選択し，2に近いほどランダムにトークンを選択する
+  - 通常は0.7 ~ 1.0 程度
+- `top_p`
+  - 確率の合計がpを超えるまで，確率の高いトークンを選び，その中から次のトークンを選択する
+  - `temperature`の代替手法であり，どちらか一方を設定する
+  - 基本的には`temperature`を設定する
+- `max_tokens`
+  - モデルが生成可能な最大トークン数
+  - 出力トークン数がこの値を超えると、出力は途中で停止する
+  - 設定可能な最大値はモデルによって異なります
+- `stop`
+  - モデルがトークンの生成を停止するシーケンス
+  - 指定した文字列がトークンの生成中に出現すると、出力を停止する
+- `tool_choice`
+  - モデルが使用するツールをどのように決定するか
+  - `auto`に設定するとモデルが使用するツールを選択する
 
 こうしてみると，意外と共通のオプションはそこまで多くないですね．
 
@@ -871,28 +881,29 @@ export interface MessageCreateParamsBase {
 
 [https://github.com/r38k/ai-cli](https://github.com/r38k/ai-cli)
 
-* [temperature](#temperature)
-* [topP](#topP)
-* [topK](#topK)
-* [candidateCount](#candidateCount)
-* [maxOutputTokens](#maxOutputTokens)
-* [stopSequences](#stopSequences)
-* [responseLogprobs](#responseLogprobs)
-* [logprobs](#logprobs)
-* [presencePenalty](#presencePenalty)
-* [frequencyPenalty](#frequencyPenalty)
-* [seed](#seed)
-* [responseMimeType](#responseMimeType)
-* [responseSchema](#responseSchema)
-* [routingConfig](#routingConfig)
-* [modelSelectionConfig](#modelSelectionConfig)
-* [safetySettings](#safetySettings)
-* [toolConfig](#toolConfig)
-* [labels](#labels)
-* [responseModalities](#responseModalities)
-* [thinkingConfig](#thinkingConfig)
+- [temperature](#temperature)
+- [topP](#topP)
+- [topK](#topK)
+- [candidateCount](#candidateCount)
+- [maxOutputTokens](#maxOutputTokens)
+- [stopSequences](#stopSequences)
+- [responseLogprobs](#responseLogprobs)
+- [logprobs](#logprobs)
+- [presencePenalty](#presencePenalty)
+- [frequencyPenalty](#frequencyPenalty)
+- [seed](#seed)
+- [responseMimeType](#responseMimeType)
+- [responseSchema](#responseSchema)
+- [routingConfig](#routingConfig)
+- [modelSelectionConfig](#modelSelectionConfig)
+- [safetySettings](#safetySettings)
+- [toolConfig](#toolConfig)
+- [labels](#labels)
+- [responseModalities](#responseModalities)
+- [thinkingConfig](#thinkingConfig)
 
 ### temperature
+
 `temperature`の値を変えながら，出力結果を確認してみましょう．
 Haskellでfizzbuzzのコードを書かせてみました．
 
@@ -976,8 +987,7 @@ fizzbuzz n
   | n  mod  15 == 0 = "FizzBuzz"
   | n  mod  3 == 0  = "Fizz"      
   | n  mod  5 == 0  = "Buzz"      
-  | otherwise       = show n      
-
+  | otherwise       = show n
 ```
 
 このくらいの指示だとデフォルトとtemperature=0にあまり差はありません．
@@ -994,6 +1004,7 @@ TODO: 今回は力尽きました．
 TODO: 今回は力尽きました．
 
 ### candidateCount
+
 `candidateCount`はLLMに回答を何個生成させるかを指定できます．
 例えば，`candidateCount=2`と指定すると，LLMは2つの回答を生成します．
 複数パターンの回答を生成させ，その中からいい回答を選ぶことができます．
@@ -1003,12 +1014,14 @@ TODO: 今回は力尽きました．
 ai-cliにはstreamingしか実装していないので，サンプルコードを作成し動作を確認しました．
 
 サポートされているのは，以下の二つのみとドキュメントには書かれています．
-* `gemini-2.0-flash-lite`
-* `gemini-2.0-flash`
+
+- `gemini-2.0-flash-lite`
+- `gemini-2.0-flash`
 
 しかし，`gemini-2.5-flash-preview-05-20`と`gemini-2.5-pro-preview-05-06`で動くことを確認しました．
 
 以下は`candidateCount=2`と指定した場合の出力例です．
+
 ```json
 GenerateContentResponse {
   candidates: [
@@ -1041,20 +1054,21 @@ GenerateContentResponse {
 ```
 
 streaming出力の方も実は動くのではと確かめてみましたがエラーが発生しました．
+
 ```json
 {
-    "error":
-        {
-            "message": "{\n  \"error\": {\n    \"code\": 400,\n    \"message\": \"Only one candidate can be specified in the current model\",\n    \"status\": \"INVALID_ARGUMENT\"\n  }\n}\n",
-            "code": 400,
-            "status": "Bad Request"
-        }
+  "error": {
+    "message": "{\n  \"error\": {\n    \"code\": 400,\n    \"message\": \"Only one candidate can be specified in the current model\",\n    \"status\": \"INVALID_ARGUMENT\"\n  }\n}\n",
+    "code": 400,
+    "status": "Bad Request"
+  }
 }
 ```
 
 streaming出力は`generateContentStream`，非streaming出力は`generateContent`に関数が分かれているので，`generateContentStream`ではプロパティを設定できないようにできるのでは？と思いますが．
 
 ### maxOutputTokens
+
 `gemini-2.5-flash-preview-05-20`では出力トークンの上限が`65,536`に設定されている．
 よってこの値は1 ~ 65,536の範囲で設定できる．
 
@@ -1080,10 +1094,12 @@ ai "こんにちは" -t 4
 "！", "何か", "お手"がそれぞれ1トークンずつ増えていることが分かります．
 
 ### stopSequences
+
 `stopSequences`には文字列の配列を指定できます．
 LLMの回答の中に，指定した文字列が検出された場合にテキスト生成を停止することができます．
 
 例として，`stopSequences: ["！"]`のように設定してみます．
+
 ```sh
 deno task dev "こんにちは"
 こんにちは
@@ -1095,31 +1111,36 @@ deno task dev "こんにちは"
 よほど必要だと感じることがなければ，使うことは考えなくてもいいと思います．
 
 ### responseLogprobs
+
 各ステップでモデルに選ばれたトークンの`logprobs`(対数確率)を返すかどうか。(true/false)
 
 この機能は，ストリーミング出力には対応しておらず，以下のモデルのみサポートされているとドキュメントにあります．
-* `gemini-2.0-flash`
-* `gemini-2.0-flash-lite`
+
+- `gemini-2.0-flash`
+- `gemini-2.0-flash-lite`
 
 ただ，実行してみると`gemini-2.0-flash`でもエラーになりました．
+
 ```
 error: Uncaught (in promise) ClientError: got status: 400 Bad Request. {"error":{"code":400,"message":"Logprobs is not supported for the current model.","status":"INVALID_ARGUMENT"}}
 ```
 
-VertexAIのモデルでないとダメなんでしょうか？
-ドキュメントには
+VertexAIのモデルでないとダメなんでしょうか？ ドキュメントには
+
 > responseLogprobsを使用したリクエストの1日の上限は1です。
-とあるので，どのみちあまり使えなさそうです．
+> とあるので，どのみちあまり使えなさそうです．
 
 楽しみにしていたのですが残念です．
 
 ### logprobs
+
 各ステップ毎の`logprobs`の上位何トークンを返すかを指定します．
 `logprobs=5`を設定すると，`logprobs`の上位5トークンを返すようになります．
 
 `responseLogprobs`を指定できないので，このオプションも使えません．
 
 ### presencePenalty
+
 `presencePenalty`は，既に生成されたテキスト中に含まれるトークンが再度出現する可能性を制御します．
 `-2.0` ~ `2.0`の範囲で設定できます．(2.0は含まれません)
 `-2.0`に近いほど既出のトークンを繰り返しやすく，`2.0`に近いほど多様な表現をするようになります．
@@ -1132,22 +1153,26 @@ Claudeに使用例を聞いてみましたが，高い値を設定して「素�
 コード生成時は低い値にして，なるべく既存の実装を維持するようにするみたいな使い道もあるかも？
 
 ### frequencyPenalty
+
 `frequencyPenalty`は`presencePenalty`に似ていますが，生成されたテキスト内に同じトークンが繰り返し出現する可能性を制御します．
 `presencePenalty`では一度でも出現したトークンすべてに一律のペナルティを課しますが，`frequencyPenalty`は出現する回数が多いほど強いペナルティを課します．
 `-2.0` ~ `2.0`の範囲で設定できます．(2.0は含まれません)
 `-2.0`に近いほど既出のトークンを繰り返しやすく，`2.0`に近いほど多様な表現をするようになります．
 
 ### seed
+
 単純な生成時に使用するシード値です．
 デフォルトは乱数ですが，値を固定することで同じ入力に対して同じような出力をするようになります．
 `temperature=0`と同様に完全に同じ出力をするわけではありません．
 
 ### responseMimeType
+
 `responseMimeType`は出力する回答のMIMEタイプを指定できます．
 設定できるMIMEタイプは以下の3つです．
-* `text/plain` (デフォルト)
-* `application/json`
-* `text/x.enum`
+
+- `text/plain` (デフォルト)
+- `application/json`
+- `text/x.enum`
 
 デフォルトは`text/plain`で，特別な理由がない限りは変更する必要はありません．
 後述の`responseSchema`を使用してJSON形式で出力させたい場合は`application/json`を指定します．
@@ -1155,74 +1180,81 @@ LLMに分類タスクをさせるときは，`text/x.enum`を指定します．
 `responseSchema`で定義した列挙値を出力します．
 
 ### responseSchema
-`responseSchema`でJSON Schemaあるいは列挙型を指定することで，LLMが指定した形式で出力するようになります．
+
+`responseSchema`でJSON
+Schemaあるいは列挙型を指定することで，LLMが指定した形式で出力するようになります．
 
 用途によっては必須な設定です．
 
 TODO: 今回は力尽きました．
 
 ### routingConfig
+
 (VertexAI専用)
 非推奨になっていて，`modelSelectionConfig`を使うことが推奨されています．
 内容は`modelSelectionConfig`で合わせて説明します．
 
 ### modelSelectionConfig
+
 (VertexAI専用)
 なんとなくイメージはついていますが，VertexAIを使ってないのでスキップ．
 
 ### safetySettings
+
 入力された内容に有害な要素が含まれるかを検出しブロックするための設定です．
 
-* `HarmBlockMethod`: 有害なコンテンツをブロックする閾値の方法を指定します
-  * `HARM_BLOCK_METHOD_UNSPECIFIED`: ブロックする方法を指定しない
-  * `SEVERITY`: コンテンツが有害な確率と重大度のスコアを考慮してブロックする
-  * `PROBABILITY`: コンテンツが有害な確率を使用してブロックする (デフォルト)
+- `HarmBlockMethod`: 有害なコンテンツをブロックする閾値の方法を指定します
+  - `HARM_BLOCK_METHOD_UNSPECIFIED`: ブロックする方法を指定しない
+  - `SEVERITY`: コンテンツが有害な確率と重大度のスコアを考慮してブロックする
+  - `PROBABILITY`: コンテンツが有害な確率を使用してブロックする (デフォルト)
 
-* `HarmCategory`: ブロックするコンテンツの有害カテゴリ
-  * `HARM_CATEGORY_UNSPECIFIED`: カテゴリの指定なし
-  * `HARM_CATEGORY_HATE_SPEECH`: ヘイトスピーチ
-  * `HARM_CATEGORY_DANGEROUS_CONTENT`: 危険なコンテンツ
-  * `HARM_CATEGORY_HARASSMENT`: 嫌がらせ
-  * `HARM_CATEGORY_SEXUALLY_EXPLICIT`: 性的なコンテンツ
-  * `HARM_CATEGORY_CIVIC_INTEGRITY`: 政治的なコンテンツ
+- `HarmCategory`: ブロックするコンテンツの有害カテゴリ
+  - `HARM_CATEGORY_UNSPECIFIED`: カテゴリの指定なし
+  - `HARM_CATEGORY_HATE_SPEECH`: ヘイトスピーチ
+  - `HARM_CATEGORY_DANGEROUS_CONTENT`: 危険なコンテンツ
+  - `HARM_CATEGORY_HARASSMENT`: 嫌がらせ
+  - `HARM_CATEGORY_SEXUALLY_EXPLICIT`: 性的なコンテンツ
+  - `HARM_CATEGORY_CIVIC_INTEGRITY`: 政治的なコンテンツ
 
-* `HarmBlockThreshold`: ブロックする閾値
-  * `HARM_BLOCK_THRESHOLD_UNSPECIFIED`: 閾値を指定しない
-  * `BLOCK_LOW_AND_ABOVE`: 閾値低 いっぱいブロックする
-  * `BLOCK_MEDIUM_AND_ABOVE`: 閾値中
-  * `BLOCK_ONLY_HIGH`: 閾値高 あまりブロックしない
-  * `BLOCK_NONE`: ブロックしない
-  * `OFF`: 安全フィルターをオフ
+- `HarmBlockThreshold`: ブロックする閾値
+  - `HARM_BLOCK_THRESHOLD_UNSPECIFIED`: 閾値を指定しない
+  - `BLOCK_LOW_AND_ABOVE`: 閾値低 いっぱいブロックする
+  - `BLOCK_MEDIUM_AND_ABOVE`: 閾値中
+  - `BLOCK_ONLY_HIGH`: 閾値高 あまりブロックしない
+  - `BLOCK_NONE`: ブロックしない
+  - `OFF`: 安全フィルターをオフ
 
 ### toolConfig
 
-* `FunctionCallingConfig`
-  * `mode`: `"AUTO"`, `"ANY"`, `"NONE"`
-    * ツール呼び出しの動作を制御できます．
-    * `AUTO`: モデルが関数呼び出しまたは自然言語応答のいずれかを予測する
-    * `ANY`: モデルが常に何れかのツール呼び出しを選択する
-    * `NONE`: モデルは関数呼び出しを予測しない
-  * `allowedFunctionNames`: `string[]`
-    * `mode`が`ANY`の場合は，`allowedFunctionNames`で指定した関数名のいずれかを選択する
-    * `allowedFunctionNames`を指定しない場合は，toolsに指定したすべてのツールが対象になる
-* `RetrievalConfig`
-  * `latLng`: `latitude`, `longitude`
-    * Geminiのグラウンディング機能を使い，Google検索を使用するときの現在地を緯度と経度で指定する
+- `FunctionCallingConfig`
+  - `mode`: `"AUTO"`, `"ANY"`, `"NONE"`
+    - ツール呼び出しの動作を制御できます．
+    - `AUTO`: モデルが関数呼び出しまたは自然言語応答のいずれかを予測する
+    - `ANY`: モデルが常に何れかのツール呼び出しを選択する
+    - `NONE`: モデルは関数呼び出しを予測しない
+  - `allowedFunctionNames`: `string[]`
+    - `mode`が`ANY`の場合は，`allowedFunctionNames`で指定した関数名のいずれかを選択する
+    - `allowedFunctionNames`を指定しない場合は，toolsに指定したすべてのツールが対象になる
+- `RetrievalConfig`
+  - `latLng`: `latitude`, `longitude`
+    - Geminiのグラウンディング機能を使い，Google検索を使用するときの現在地を緯度と経度で指定する
 
 ### labels
+
 API呼び出しに対して，ユーザーがKV形式でメタデータを設定することができます．
 使用用途を設定することで，`labels`毎の料金内訳を確認することができます．
 
 ### responseModalities
+
 LLMが生成するデータの形式を指定できます．
 `responseModalities=["TEXT", "IMAGE"]`のように指定すると，LLMはテキストと画像生成に対応します．
 画像や音声等の生成に対応しているGeminiならではのオプションです．
 
 ### thinkingConfig
+
 Reasioning用のオプションを設定できます．
 
-* `includeThoughts`: `boolean`
-  * レスポンスにReasoningの過程を含めるかを指定できます．
-* `thinkingBudget`: `number`
-  * Reasoningに使用できるトークン数を指定できます．
-
+- `includeThoughts`: `boolean`
+  - レスポンスにReasoningの過程を含めるかを指定できます．
+- `thinkingBudget`: `number`
+  - Reasoningに使用できるトークン数を指定できます．

@@ -1,3 +1,50 @@
+/**
+ * コンソール出力管理モジュール
+ *
+ * ターミナル向けの統一されたメッセージ出力システムを提供します。
+ * カラーリング、スタイリング、セマンティックなメッセージタイプ（エラー、成功等）を
+ * 統合的に管理し、NO_COLOR環境変数への対応やクロスプラットフォーム互換性を保証します。
+ *
+ * 主要機能:
+ * - セマンティックメッセージ出力（error, success, warning, info）
+ * - カスタマイズ可能なテキストスタイリング
+ * - NO_COLOR環境変数の自動対応
+ * - ANSIエスケープシーケンスの適切な制御
+ * - チェーン可能なスタイル適用システム
+ *
+ * 対応するスタイル:
+ * - カラー: red, green, yellow, cyan, blue, magenta, gray
+ * - テキスタイル: bold, dim, underline
+ * - 環境依存: NO_COLORサポート、TTY検出
+ *
+ * メッセージタイプ:
+ * - error(): 赤色で「✗」アイコン付きエラーメッセージ
+ * - success(): 緑色で「✓」アイコン付き成功メッセージ
+ * - warning(): 黄色で「⚠」アイコン付き警告メッセージ
+ * - info(): シアンで「ⓘ」アイコン付き情報メッセージ
+ * - print(): カスタムスタイル適用可能な汎用出力
+ *
+ * 使用方法:
+ * ```typescript
+ * import { error, success, warning, info, print } from "./console.ts";
+ *
+ * // セマンティックメッセージ
+ * error("処理に失敗しました");
+ * success("処理が完了しました");
+ * warning("注意が必要です");
+ * info("参考情報です");
+ *
+ * // カスタムスタイル
+ * print("重要な情報", { color: "red", bold: true });
+ * ```
+ *
+ * 技術仕様:
+ * - NO_COLOR環境変数によるカラー無効化対応
+ * - Kleurライブラリベースのスタイリング
+ * - ANSIエスケープシーケンスの適切な処理
+ * - TTY/non-TTY環境での適切な動作保証
+ */
+
 import { applyColor, createStyler, type Styler } from "./styles.ts";
 import { assertEquals } from "https://deno.land/std@0.208.0/assert/mod.ts";
 import { stripAnsiCode } from "https://deno.land/std@0.208.0/fmt/colors.ts";
@@ -492,3 +539,114 @@ Deno.test("NO_COLOR環境変数のサポート", () => {
   }
   console.error = originalError;
 });
+
+// === デバッグ用サンプル実行 ===
+
+if (import.meta.main) {
+  console.log("=== コンソール出力管理 デバッグモード ===\n");
+
+  // 1. セマンティックメッセージのデモ
+  console.log("1. セマンティックメッセージの表示:");
+  error("これはエラーメッセージです");
+  success("これは成功メッセージです");
+  warning("これは警告メッセージです");
+  info("これは情報メッセージです");
+  console.log();
+
+  // 2. カスタムスタイルのデモ
+  console.log("2. カスタムスタイルの表示:");
+  print("赤色のテキスト", { color: "red" });
+  print("太字のテキスト", { bold: true });
+  print("薄いテキスト", { dim: true });
+  print("下線付きテキスト", { underline: true });
+  print("赤色太字のテキスト", { color: "red", bold: true });
+  print("青色下線のテキスト", { color: "blue", underline: true });
+  console.log();
+
+  // 3. 全カラーの表示
+  console.log("3. 利用可能なカラーバリエーション:");
+  const colors = [
+    "red",
+    "green",
+    "yellow",
+    "cyan",
+    "blue",
+    "magenta",
+    "gray",
+  ] as const;
+  for (const color of colors) {
+    print(`${color}色のテキスト`, { color });
+  }
+  console.log();
+
+  // 4. スタイル組み合わせのデモ
+  console.log("4. スタイル組み合わせの例:");
+  print("通常のテキスト");
+  print("太字 + 赤色", { bold: true, color: "red" });
+  print("薄字 + 青色", { dim: true, color: "blue" });
+  print("下線 + 緑色", { underline: true, color: "green" });
+  print("太字 + 下線 + 黄色", { bold: true, underline: true, color: "yellow" });
+  console.log();
+
+  // 5. 環境変数の影響テスト
+  console.log("5. 環境変数の状態確認:");
+  console.log(`NO_COLOR: ${Deno.env.get("NO_COLOR") || "(未設定)"}`);
+  console.log(`FORCE_COLOR: ${Deno.env.get("FORCE_COLOR") || "(未設定)"}`);
+  console.log(`TTY環境: ${Deno.stdout.isTerminal()}`);
+  console.log();
+
+  // 6. 対話型デモ
+  const runInteractiveDemo = prompt("対話型デモを実行しますか？ (y/N):");
+  if (runInteractiveDemo?.toLowerCase() === "y") {
+    console.log("\n6. 対話型メッセージデモ:");
+
+    while (true) {
+      const messageType = prompt(
+        "メッセージタイプを選択 (error/success/warning/info/custom/exit):",
+      );
+
+      if (!messageType || messageType === "exit") {
+        console.log("デモを終了します。");
+        break;
+      }
+
+      const message = prompt("メッセージ内容を入力:");
+      if (!message) continue;
+
+      switch (messageType) {
+        case "error":
+          error(message);
+          break;
+        case "success":
+          success(message);
+          break;
+        case "warning":
+          warning(message);
+          break;
+        case "info":
+          info(message);
+          break;
+        case "custom": {
+          const color = prompt(
+            "カラーを選択 (red/green/yellow/cyan/blue/magenta/gray):",
+          ) as typeof colors[number] | null;
+          const bold = prompt("太字にしますか？ (y/N):") === "y";
+          const dim = prompt("薄字にしますか？ (y/N):") === "y";
+          const underline = prompt("下線を付けますか？ (y/N):") === "y";
+
+          print(message, {
+            color: (color && colors.includes(color)) ? color : undefined,
+            bold,
+            dim,
+            underline,
+          });
+          break;
+        }
+        default:
+          console.log("不明なメッセージタイプです。");
+      }
+    }
+  }
+
+  console.log("\nデバッグモード終了");
+}

@@ -1,95 +1,39 @@
+/**
+ * モデル選択UIモジュール
+ *
+ * Gemini AIのモデルを対話的に選択するためのターミナルUIを提供します。
+ * 矢印キーでの選択、Enterでの決定、Esc/qでのキャンセルに対応し、
+ * 選択したモデルをデフォルトとして保存します。
+ *
+ * 主要機能:
+ * - 利用可能なGeminiモデルの一覧表示
+ * - キーボードナビゲーション（上下矢印）
+ * - 現在のデフォルトモデルのハイライト表示
+ * - 選択したモデルの永続化
+ *
+ * 使用方法:
+ * ```typescript
+ * const selectedModel = await selectModel();
+ * if (selectedModel) {
+ *   console.log(`選択されたモデル: ${selectedModel}`);
+ * }
+ * ```
+ */
+
 import { GEMINI_MODELS, type ModelId } from "../api/model.ts";
-import { getDefaultModelFromPreferences, setDefaultModel } from "../core/preferences.ts";
-import { green, yellow, cyan, dim } from "../ui/styles.ts";
-
-/**
- * キーボード入力を処理するための型
- */
-interface KeyEvent {
-  key: string;
-  ctrl: boolean;
-  meta: boolean;
-  shift: boolean;
-}
-
-/**
- * 生のキー入力を読み取る
- */
-async function readKey(): Promise<KeyEvent> {
-  const buf = new Uint8Array(8);
-  const nread = await Deno.stdin.read(buf);
-  
-  if (!nread) {
-    throw new Error("stdin closed");
-  }
-  
-  const bytes = buf.slice(0, nread);
-  
-  // 単一バイトキーの直接処理
-  if (bytes.length === 1) {
-    const byte = bytes[0];
-    switch (byte) {
-      case 27: // ESC
-        return { key: "escape", ctrl: false, meta: false, shift: false };
-      case 13: // CR (Enter)
-      case 10: // LF
-        return { key: "return", ctrl: false, meta: false, shift: false };
-      case 113: // 'q'
-        return { key: "q", ctrl: false, meta: false, shift: false };
-      default:
-        return { key: String.fromCharCode(byte), ctrl: false, meta: false, shift: false };
-    }
-  }
-  
-  // ESCシーケンスの処理
-  if (bytes[0] === 27 && bytes[1] === 91) { // ESC [
-    switch (bytes[2]) {
-      case 65: // Up arrow
-        return { key: "up", ctrl: false, meta: false, shift: false };
-      case 66: // Down arrow
-        return { key: "down", ctrl: false, meta: false, shift: false };
-    }
-  }
-  
-  // フォールバック
-  const key = new TextDecoder().decode(bytes).trim();
-  return { key, ctrl: false, meta: false, shift: false };
-}
-
-/**
- * ターミナルを生モードに設定
- */
-function enableRawMode() {
-  Deno.stdin.setRaw(true);
-}
-
-/**
- * ターミナルの生モードを解除
- */
-function disableRawMode() {
-  Deno.stdin.setRaw(false);
-}
-
-/**
- * 画面をクリア
- */
-function clearScreen() {
-  console.log("\x1b[2J\x1b[H");
-}
-
-/**
- * カーソルを非表示
- */
-function hideCursor() {
-  Deno.stdout.writeSync(new TextEncoder().encode("\x1b[?25l"));
-}
-
-/**
- * カーソルを表示
- */
-function showCursor() {
-  Deno.stdout.writeSync(new TextEncoder().encode("\x1b[?25h"));
-}
+import {
+  getDefaultModelFromPreferences,
+  setDefaultModel,
+} from "../core/preferences.ts";
+import { cyan, dim, green } from "../ui/styles.ts";
+import {
+  clearScreen,
+  disableRawMode,
+  enableRawMode,
+  hideCursor,
+  readKey,
+  showCursor,
+} from "../ui/terminal.ts";
 
 /**
  * モデル選択UIを表示
@@ -97,51 +41,55 @@ function showCursor() {
 export async function selectModel(): Promise<ModelId | null> {
   const models = Object.values(GEMINI_MODELS);
   const currentDefault = await getDefaultModelFromPreferences();
-  let selectedIndex = models.findIndex(model => model.id === currentDefault);
+  let selectedIndex = models.findIndex((model) => model.id === currentDefault);
   if (selectedIndex === -1) selectedIndex = 0;
-  
+
   enableRawMode();
   hideCursor();
-  
+
   try {
     while (true) {
       clearScreen();
-      
+
       // ヘッダー
       console.log(cyan("🤖 Gemini モデルを選択してください\n"));
-      
+
       // モデルリスト
       models.forEach((model, index) => {
         const isSelected = index === selectedIndex;
-        const isDefault = model.id === currentDefault;
-        
+
         let line = "  ";
         if (isSelected) {
           line += green("> " + model.displayName);
         } else {
           line += "  " + model.displayName;
         }
-        
+
         console.log(line);
       });
-      
+
       // フッター
       console.log(dim("\n[↑/↓] 選択  [Enter] 決定  [Esc/q] キャンセル"));
-      
+
       // キー入力を待つ
       const keyEvent = await readKey();
-      
+
       switch (keyEvent.key) {
         case "up":
-          selectedIndex = selectedIndex > 0 ? selectedIndex - 1 : models.length - 1;
+          selectedIndex = selectedIndex > 0
+            ? selectedIndex - 1
+            : models.length - 1;
           break;
         case "down":
-          selectedIndex = selectedIndex < models.length - 1 ? selectedIndex + 1 : 0;
+          selectedIndex = selectedIndex < models.length - 1
+            ? selectedIndex + 1
+            : 0;
           break;
-        case "return":
+        case "return": {
           const selectedModel = models[selectedIndex];
           await setDefaultModel(selectedModel.id as ModelId);
           return selectedModel.id as ModelId;
+        }
         case "escape":
         case "q":
           return null;
@@ -153,12 +101,63 @@ export async function selectModel(): Promise<ModelId | null> {
   }
 }
 
-// テスト
+// === テスト ===
+
+import { assert } from "https://deno.land/std@0.224.0/assert/mod.ts";
+
+Deno.test("model-selector - モデル一覧の整合性チェック", () => {
+  const models = Object.values(GEMINI_MODELS);
+
+  // モデルが存在することを確認
+  assert(models.length > 0, "少なくとも1つのモデルが必要");
+
+  // 各モデルの必須プロパティを確認
+  for (const model of models) {
+    assert(
+      typeof model.id === "string",
+      "モデルIDは文字列である必要があります",
+    );
+    assert(
+      typeof model.displayName === "string",
+      "表示名は文字列である必要があります",
+    );
+    assert(model.id.length > 0, "モデルIDは空であってはいけません");
+    assert(model.displayName.length > 0, "表示名は空であってはいけません");
+  }
+});
+
+Deno.test("model-selector - デフォルトモデルの検索", async () => {
+  const models = Object.values(GEMINI_MODELS);
+  const currentDefault = await getDefaultModelFromPreferences();
+
+  // デフォルトモデルが有効なモデルIDであることを確認
+  const defaultIndex = models.findIndex((model) => model.id === currentDefault);
+  assert(
+    defaultIndex !== -1 || currentDefault === null,
+    "デフォルトモデルは有効なモデルIDか未設定である必要があります",
+  );
+});
+
+// === デバッグ用サンプル実行 ===
+
 if (import.meta.main) {
-  Deno.test("model-selector - basic functionality", () => {
-    // UIテストは手動で行う必要があるため、基本的な型チェックのみ
-    const models = Object.values(GEMINI_MODELS);
-    console.assert(models.length > 0);
-    console.assert(typeof models[0].displayName === "string");
-  });
+  console.log("=== モデル選択UI デバッグモード ===\n");
+  console.log("モデル選択UIを起動します...\n");
+
+  try {
+    const selected = await selectModel();
+
+    if (selected) {
+      console.log(`\n選択されたモデル: ${selected}`);
+      console.log("このモデルがデフォルトとして保存されました。");
+    } else {
+      console.log("\nキャンセルされました。");
+    }
+  } catch (error) {
+    console.error(
+      `\nエラーが発生しました: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
+  }
 }
