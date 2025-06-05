@@ -44,7 +44,6 @@
 
 import { error, info, success, warning } from "../ui/console.ts";
 import {
-  type Credentials,
   deleteCredentials,
   loadCredentials,
   saveCredentials,
@@ -345,12 +344,6 @@ if (import.meta.main) {
 
         case "clear":
           await clearAuth();
-          break;
-
-        case "test":
-          console.log("\nマスク入力のテスト（Enterで終了）:");
-          const testInput = await securePrompt("テスト入力: ");
-          console.log(`入力された文字数: ${testInput.length}`);
           break;
 
         default:
