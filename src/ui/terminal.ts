@@ -130,9 +130,7 @@ export async function readKey(): Promise<KeyEvent> {
 
 // === テスト ===
 
-import {
-  assertEquals,
-} from "https://deno.land/std@0.224.0/assert/mod.ts";
+import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 
 Deno.test("clearScreen - 正しいエスケープシーケンスを出力", () => {
   // console.logをモックして出力を確認

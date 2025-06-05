@@ -77,7 +77,7 @@ import {
 } from "@google/genai";
 import { Client } from "npm:@modelcontextprotocol/sdk/client/index.js";
 import { getDefaultModel, getModelById, type ModelId } from "./model.ts";
-import { getApiKey } from "../core/auth.ts";
+import { getApiKey, getProvider, getVertexConfig } from "../core/auth.ts";
 import { getDefaultToolset } from "../core/preferences.ts";
 
 export interface GenerateTextOptions {
@@ -155,16 +155,37 @@ export async function* generateText(
     toolResult?: { name: string; result: unknown };
   }
 > {
-  const apiKey = await getApiKey();
-  if (!apiKey) {
-    throw new Error(
-      "APIキーが設定されていません。'ai auth' コマンドで認証してください。",
-    );
+  // プロバイダーに応じてクライアントを初期化
+  const provider = await getProvider();
+  let client: GoogleGenAI;
+  
+  if (provider === "vertex-ai") {
+    const vertexConfig = await getVertexConfig();
+    if (!vertexConfig) {
+      throw new Error(
+        "Vertex AI設定がありません。'ai auth' コマンドで設定してください。",
+      );
+    }
+    
+    client = new GoogleGenAI({
+      vertexai: true,
+      project: vertexConfig.project,
+      location: vertexConfig.location,
+      apiVersion: 'v1',
+    });
+  } else {
+    // Gemini APIモード
+    const apiKey = await getApiKey();
+    if (!apiKey) {
+      throw new Error(
+        "APIキーが設定されていません。'ai auth' コマンドで認証してください。",
+      );
+    }
+    
+    client = new GoogleGenAI({
+      apiKey: apiKey,
+    });
   }
-
-  const client = new GoogleGenAI({
-    apiKey: apiKey,
-  });
 
   // Build config with dynamic tools based on model and toolset preference
   const modelId = (options.model || getDefaultModel()) as ModelId;
@@ -284,18 +305,35 @@ Deno.test("GenerateTextOptions - インターフェースの構造チェック",
 if (import.meta.main) {
   console.log("=== Gemini API統合 デバッグ ===\n");
 
-  console.log("1. 認証情報とAPIキーの確認:");
+  console.log("1. 認証情報の確認:");
   try {
-    const apiKey = await getApiKey();
-    if (apiKey) {
-      console.log(`✓ APIキーが設定されています (長さ: ${apiKey.length}文字)`);
-    } else {
-      console.log("✗ APIキーが設定されていません");
+    const provider = await getProvider();
+    console.log(`プロバイダー: ${provider || "未設定"}`);
+    
+    if (provider === "vertex-ai") {
+      const vertexConfig = await getVertexConfig();
+      if (vertexConfig) {
+        console.log(`✓ Vertex AI設定済み`);
+        console.log(`  Project: ${vertexConfig.project}`);
+        console.log(`  Location: ${vertexConfig.location}`);
+      } else {
+        console.log("✗ Vertex AI設定がありません");
+      }
+    } else if (provider === "gemini-api") {
+      const apiKey = await getApiKey();
+      if (apiKey) {
+        console.log(`✓ APIキーが設定されています (長さ: ${apiKey.length}文字)`);
+      } else {
+        console.log("✗ APIキーが設定されていません");
+      }
+    }
+    
+    if (!provider) {
       console.log("  'ai auth' コマンドで認証してください");
     }
   } catch (error) {
     console.error(
-      `APIキー取得エラー: ${
+      `認証情報取得エラー: ${
         error instanceof Error ? error.message : String(error)
       }`,
     );
@@ -435,7 +473,7 @@ if (import.meta.main) {
           "✗ APIキーが設定されていません。'ai auth' コマンドで認証してください。",
         );
       } else {
-        console.log("✓ APIキーが確認できました。テスト呼び出しを実行中...");
+        console.log("✓ 認証情報が確認できました。テスト呼び出しを実行中...");
 
         const testPrompt = prompt("テスト用のプロンプトを入力してください:") ||
           "こんにちは、簡単な挨拶をお願いします。";
@@ -498,7 +536,7 @@ if (import.meta.main) {
   console.log("必要な環境変数:");
   console.log("  GEMINI_API_KEY - 開発モード用APIキー（オプション）");
   console.log("\\n認証ファイル:");
-  console.log("  ~/.local/share/ai-cli/credentials - 本番用APIキー");
+  console.log("  ~/.local/share/ai-cli/credentials - 認証情報");
   console.log("\\n設定ファイル:");
   console.log("  ~/.config/ai-cli/preferences.json - ツールセット設定");
   console.log("\\nトラブルシューティング:");

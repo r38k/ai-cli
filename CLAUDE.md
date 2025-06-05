@@ -18,7 +18,11 @@ Google Gemini AIとModel Context Protocol (MCP)
 
 ### テストと品質管理
 
-- `deno test` - テストを実行
+- `deno task test` - 全テストを実行
+- `deno task test:core` - Coreモジュールのテストのみ実行
+- `deno task test:cli` - CLIモジュールのテストのみ実行
+- `deno task test:ui` - UIモジュールのテストのみ実行
+- `deno task test:api` - APIモジュールのテストのみ実行
 - `deno fmt` - コードをフォーマット
 - `deno lint` - コードをリント
 
@@ -47,12 +51,14 @@ deno test src/ui/console.ts src/ui/styles.ts src/ui/terminal.ts --allow-env --al
 #### テストが含まれているファイル
 
 **Core モジュール:**
+
 - `src/core/prompts.ts` - プロンプト構築のテスト
 - `src/core/xdg.ts` - XDGパス解決のテスト
 - `src/core/auth.ts` - 認証管理のテスト
 - `src/core/preferences.ts` - 設定管理のテスト
 
 **CLI モジュール:**
+
 - `src/cli/auth.ts` - 認証CLIのテスト
 - `src/cli/input.ts` - 入力処理のテスト
 - `src/cli/mcp.ts` - MCP設定のテスト
@@ -62,6 +68,7 @@ deno test src/ui/console.ts src/ui/styles.ts src/ui/terminal.ts --allow-env --al
 - `src/cli/toolset-selector.ts` - ツールセット選択UIのテスト
 
 **UI モジュール:**
+
 - `src/ui/console.ts` - コンソール出力のテスト
 - `src/ui/styles.ts` - スタイリングのテスト
 - `src/ui/terminal.ts` - ターミナル操作のテスト
@@ -235,7 +242,11 @@ export MCP_CONFIG_PATH="~/.config/ai-cli/mcp-config.json"
  */
 
 // 型定義
-export type ToolsetType = "custom" | "builtin" | "codeExecution" | "googleSearch";
+export type ToolsetType =
+  | "custom"
+  | "builtin"
+  | "codeExecution"
+  | "googleSearch";
 
 // 設定取得関数
 export async function getDefaultToolset(): Promise<ToolsetType> {

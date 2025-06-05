@@ -37,6 +37,7 @@ import {
 } from "./cli/mcp.ts";
 import { selectModel } from "./cli/model-selector.ts";
 import { selectToolset } from "./cli/toolset-selector.ts";
+import { runConf } from "./cli/conf.ts";
 import { green } from "./ui/styles.ts";
 
 /**
@@ -272,6 +273,12 @@ async function main() {
       } else {
         info("ツールセット選択がキャンセルされました");
       }
+      return;
+    }
+
+    // confコマンドの処理
+    if (args.mode === "conf") {
+      await runConf(args.confSubcommand);
       return;
     }
 

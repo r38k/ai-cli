@@ -65,7 +65,8 @@ export type ExecutionMode =
   | "auth"
   | "mcp"
   | "model"
-  | "toolset";
+  | "toolset"
+  | "conf";
 
 /**
  * パース結果
@@ -75,6 +76,7 @@ export interface ParsedArgs {
   prompt?: string;
   files: string[];
   mcpSubcommand?: string;
+  confSubcommand?: string;
   options: {
     help: boolean;
     model: string;
@@ -140,6 +142,22 @@ export function parseArgs(args: string[]): ParsedArgs {
     return {
       mode: "toolset",
       files: [],
+      options: {
+        help: false,
+        model: getDefaultModel(),
+        maxTokens: 1000,
+        verbose: false,
+        tools: false,
+      },
+    };
+  }
+
+  // confコマンドの特別処理
+  if (args.length > 0 && args[0] === "conf") {
+    return {
+      mode: "conf",
+      files: [],
+      confSubcommand: args[1],
       options: {
         help: false,
         model: getDefaultModel(),
@@ -228,6 +246,7 @@ AI CLI - Gemini AIを使用したコマンドラインツール
   ai mcp <subcommand>    MCP設定を管理
   ai model               モデルを選択
   ai toolset             ツールセットを選択
+  ai conf                設定情報を表示
 
 オプション:
   -f, --file <path>      入力ファイルを指定（複数指定可）

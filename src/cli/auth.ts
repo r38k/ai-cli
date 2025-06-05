@@ -44,6 +44,7 @@
 
 import { error, info, success, warning } from "../ui/console.ts";
 import {
+  type Credentials,
   deleteCredentials,
   loadCredentials,
   saveCredentials,
@@ -64,19 +65,97 @@ export async function runAuth(): Promise<void> {
     }
   }
 
-  // APIキーの入力を受け付け（セキュアな入力）
-  let apiKey: string;
+  // プロバイダーの選択
+  console.log("\n認証プロバイダーを選択してください:");
+  console.log("1. Gemini API (APIキーを使用)");
+  console.log("2. Vertex AI (Google Cloudプロジェクトを使用)");
 
+  const providerChoice = prompt("\n選択 (1 or 2):");
+
+  if (providerChoice === "1") {
+    await setupGeminiApi();
+  } else if (providerChoice === "2") {
+    await setupVertexAi();
+  } else {
+    error("無効な選択です。");
+    return;
+  }
+}
+
+/**
+ * Gemini API の設定
+ */
+async function setupGeminiApi(): Promise<void> {
+  // APIキーの入力を受け付け（セキュアな入力）
+  const apiKey = await securePrompt("Gemini API Key: ");
+
+  if (!apiKey || apiKey.trim() === "") {
+    error("APIキーが入力されませんでした。");
+    return;
+  }
+
+  try {
+    // APIキーを保存
+    await saveCredentials({
+      provider: "gemini-api",
+      geminiApiKey: apiKey.trim(),
+    });
+    success("認証情報を保存しました。");
+    info("プロバイダー: Gemini API");
+    info("これで ai コマンドが使用できます。");
+  } catch (err) {
+    error(`認証情報の保存に失敗しました: ${err}`);
+  }
+}
+
+/**
+ * Vertex AI の設定
+ */
+async function setupVertexAi(): Promise<void> {
+  console.log("\nVertex AI の設定:");
+
+  const project = prompt("Google Cloud Project ID:");
+  if (!project || project.trim() === "") {
+    error("Project IDが入力されませんでした。");
+    return;
+  }
+
+  const location = prompt("Location (デフォルト: us-central1):") ||
+    "us-central1";
+
+  try {
+    await saveCredentials({
+      provider: "vertex-ai",
+      vertexProject: project.trim(),
+      vertexLocation: location.trim(),
+    });
+    success("認証情報を保存しました。");
+    info("プロバイダー: Vertex AI");
+    info(`Project: ${project}`);
+    info(`Location: ${location}`);
+    info(
+      "\n注意: Vertex AIを使用するには、gcloud CLIで認証されている必要があります。",
+    );
+    info("  gcloud auth application-default login");
+  } catch (err) {
+    error(`認証情報の保存に失敗しました: ${err}`);
+  }
+}
+
+/**
+ * セキュアな入力を受け付ける
+ */
+async function securePrompt(message: string): Promise<string> {
   // TTYが利用可能かチェック
   if (Deno.stdin.isTerminal()) {
     // 改行せずにプロンプトを表示
-    await Deno.stdout.write(new TextEncoder().encode("Gemini API Key: "));
+    await Deno.stdout.write(new TextEncoder().encode(message));
 
     // パスワード入力を隠すための設定
     const decoder = new TextDecoder();
     Deno.stdin.setRaw(true);
 
-    const apiKeyBytes: number[] = [];
+    const inputBytes: number[] = [];
 
     try {
       while (true) {
@@ -95,8 +174,8 @@ export async function runAuth(): Promise<void> {
 
         // Backspace
         if (char === 127 || char === 8) {
-          if (apiKeyBytes.length > 0) {
-            apiKeyBytes.pop();
+          if (inputBytes.length > 0) {
+            inputBytes.pop();
             // カーソルを戻して文字を消す
             await Deno.stdout.write(new TextEncoder().encode("\b \b"));
           }
@@ -105,7 +184,7 @@ export async function runAuth(): Promise<void> {
 
         // 通常の文字
         if (char >= 32 && char <= 126) {
-          apiKeyBytes.push(char);
+          inputBytes.push(char);
           // アスタリスクを表示
           await Deno.stdout.write(new TextEncoder().encode("*"));
         }
@@ -114,23 +193,10 @@ export async function runAuth(): Promise<void> {
       Deno.stdin.setRaw(false);
     }
 
-    apiKey = decoder.decode(new Uint8Array(apiKeyBytes));
+    return decoder.decode(new Uint8Array(inputBytes));
   } else {
     // TTYが利用できない場合は通常のpromptを使用
-    apiKey = prompt("Gemini API Key:") || "";
-  }
-  if (!apiKey || apiKey.trim() === "") {
-    error("APIキーが入力されませんでした。");
-    return;
-  }
-
-  try {
-    // APIキーを保存
-    await saveCredentials(apiKey.trim());
-    success("認証情報を保存しました: ~/.ai-cli/credentials");
-    info("これで ai コマンドが使用できます。");
-  } catch (err) {
-    error(`認証情報の保存に失敗しました: ${err}`);
+    return prompt(message) || "";
   }
 }
 
@@ -142,9 +208,20 @@ export async function showAuthStatus(): Promise<void> {
 
   if (credentials) {
     success("認証済み");
+    console.log(
+      `プロバイダー: ${
+        credentials.provider === "gemini-api" ? "Gemini API" : "Vertex AI"
+      }`,
+    );
     console.log(`作成日時: ${credentials.createdAt}`);
     console.log(`更新日時: ${credentials.updatedAt}`);
-    console.log(`APIキー: ${credentials.geminiApiKey.substring(0, 8)}...`);
+
+    if (credentials.provider === "gemini-api" && credentials.geminiApiKey) {
+      console.log(`APIキー: ${credentials.geminiApiKey.substring(0, 8)}...`);
+    } else if (credentials.provider === "vertex-ai") {
+      console.log(`Project: ${credentials.vertexProject}`);
+      console.log(`Location: ${credentials.vertexLocation || "us-central1"}`);
+    }
   } else {
     warning("未認証");
     console.log("ai auth コマンドで認証してください。");
@@ -222,7 +299,7 @@ Deno.test("auth - プロンプトメッセージの整合性", () => {
 });
 
 Deno.test("auth - 保存パスの一貫性", () => {
-  const displayPath = "~/.ai-cli/credentials";
+  const displayPath = "~/.local/share/ai-cli/credentials";
   assert(
     displayPath.includes("credentials"),
     "認証情報ファイル名が含まれている必要があります",
@@ -272,45 +349,8 @@ if (import.meta.main) {
 
         case "test":
           console.log("\nマスク入力のテスト（Enterで終了）:");
-          if (Deno.stdin.isTerminal()) {
-            await Deno.stdout.write(new TextEncoder().encode("テスト入力: "));
-            Deno.stdin.setRaw(true);
-
-            const chars: number[] = [];
-            try {
-              while (true) {
-                const buf = new Uint8Array(1);
-                const n = await Deno.stdin.read(buf);
-                if (n === null || n === 0) break;
-
-                const char = buf[0];
-                if (char === 10 || char === 13) {
-                  console.log();
-                  break;
-                }
-
-                if (char === 127 || char === 8) {
-                  if (chars.length > 0) {
-                    chars.pop();
-                    await Deno.stdout.write(new TextEncoder().encode("\b \b"));
-                  }
-                  continue;
-                }
-
-                if (char >= 32 && char <= 126) {
-                  chars.push(char);
-                  await Deno.stdout.write(new TextEncoder().encode("*"));
-                }
-              }
-            } finally {
-              Deno.stdin.setRaw(false);
-            }
-
-            const input = new TextDecoder().decode(new Uint8Array(chars));
-            console.log(`入力された文字数: ${input.length}`);
-          } else {
-            console.log("TTY環境ではないため、マスク入力は利用できません。");
-          }
+          const testInput = await securePrompt("テスト入力: ");
+          console.log(`入力された文字数: ${testInput.length}`);
           break;
 
         default:

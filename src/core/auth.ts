@@ -41,7 +41,10 @@ import { decodeBase64, encodeBase64 } from "jsr:@std/encoding";
 import { getXdgConfigDir, getXdgDataDir } from "./xdg.ts";
 
 export interface Credentials {
-  geminiApiKey: string;
+  provider: "gemini-api" | "vertex-ai";
+  geminiApiKey?: string; // Gemini API用
+  vertexProject?: string; // Vertex AI用
+  vertexLocation?: string; // Vertex AI用 (デフォルト: us-central1)
   createdAt: string;
   updatedAt: string;
 }
@@ -59,18 +62,20 @@ function getCredentialsPath(): string {
 /**
  * 認証情報を保存
  */
-export async function saveCredentials(apiKey: string): Promise<void> {
+export async function saveCredentials(
+  credentials: Omit<Credentials, "createdAt" | "updatedAt">,
+): Promise<void> {
   const dataDir = getXdgDataDir();
   ensureDirSync(dataDir);
 
-  const credentials: Credentials = {
-    geminiApiKey: apiKey,
+  const fullCredentials: Credentials = {
+    ...credentials,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
 
   // JSONをBase64エンコードして保存（最小限の難読化）
-  const encoded = encodeBase64(JSON.stringify(credentials));
+  const encoded = encodeBase64(JSON.stringify(fullCredentials));
   const credentialsPath = getCredentialsPath();
 
   await Deno.writeTextFile(credentialsPath, encoded);
@@ -89,7 +94,14 @@ export async function loadCredentials(): Promise<Credentials | null> {
     const credentialsPath = getCredentialsPath();
     const encoded = await Deno.readTextFile(credentialsPath);
     const decoded = new TextDecoder().decode(decodeBase64(encoded));
-    return JSON.parse(decoded) as Credentials;
+    const credentials = JSON.parse(decoded) as Credentials;
+
+    // 旧形式の後方互換性対応
+    if (!credentials.provider && credentials.geminiApiKey) {
+      credentials.provider = "gemini-api";
+    }
+
+    return credentials;
   } catch {
     return null;
   }
@@ -120,6 +132,32 @@ export async function getApiKey(): Promise<string | null> {
   // 認証情報から読み込み
   const credentials = await loadCredentials();
   return credentials?.geminiApiKey || null;
+}
+
+/**
+ * 現在のプロバイダーを取得
+ */
+export async function getProvider(): Promise<
+  "gemini-api" | "vertex-ai" | null
+> {
+  const credentials = await loadCredentials();
+  return credentials?.provider || null;
+}
+
+/**
+ * Vertex AI設定を取得
+ */
+export async function getVertexConfig(): Promise<
+  { project: string; location: string } | null
+> {
+  const credentials = await loadCredentials();
+  if (credentials?.provider === "vertex-ai" && credentials.vertexProject) {
+    return {
+      project: credentials.vertexProject,
+      location: credentials.vertexLocation || "us-central1",
+    };
+  }
+  return null;
 }
 
 /**
@@ -184,7 +222,10 @@ Deno.test({
 
     try {
       const testApiKey = "test-api-key-12345";
-      await saveCredentials(testApiKey);
+      await saveCredentials({
+        provider: "gemini-api",
+        geminiApiKey: testApiKey,
+      });
 
       // ファイルが作成されていることを確認
       const credentialsPath = join(
@@ -220,7 +261,10 @@ Deno.test({
       const testApiKey = "test-api-key-67890";
 
       // 認証情報を保存
-      await saveCredentials(testApiKey);
+      await saveCredentials({
+        provider: "gemini-api",
+        geminiApiKey: testApiKey,
+      });
 
       // 認証情報を読み込み
       const credentials = await loadCredentials();
@@ -287,7 +331,10 @@ Deno.test({
       const testApiKey = "test-api-key-delete";
 
       // 認証情報を保存
-      await saveCredentials(testApiKey);
+      await saveCredentials({
+        provider: "gemini-api",
+        geminiApiKey: testApiKey,
+      });
       const credentialsPath = join(
         TEST_HOME,
         ".local",
@@ -349,7 +396,10 @@ Deno.test({
       Deno.env.set("DENO_ENV", "production");
 
       const testApiKey = "file-api-key";
-      await saveCredentials(testApiKey);
+      await saveCredentials({
+        provider: "gemini-api",
+        geminiApiKey: testApiKey,
+      });
 
       const apiKey = await getApiKey();
       assertEquals(apiKey, testApiKey);

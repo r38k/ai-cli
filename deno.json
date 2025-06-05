@@ -1,7 +1,12 @@
 {
   "tasks": {
     "dev": "deno run --allow-read --allow-env --allow-run --allow-net --allow-sys --allow-write src/index.ts",
-    "build": "deno compile --allow-read --allow-env --allow-run --allow-net --allow-sys --allow-write -o bin/ai src/index.ts && chmod +x bin/ai"
+    "build": "deno compile --allow-read --allow-env --allow-run --allow-net --allow-sys --allow-write -o bin/ai src/index.ts && chmod +x bin/ai",
+    "test": "deno test src/core/prompts.ts src/core/xdg.ts src/core/auth.ts src/core/preferences.ts src/cli/auth.ts src/cli/input.ts src/cli/mcp.ts src/cli/modes.ts src/cli/parser.ts src/cli/model-selector.ts src/cli/toolset-selector.ts src/ui/console.ts src/ui/styles.ts src/ui/terminal.ts src/cli/conf.ts src/api/gemini.ts --allow-env --allow-read --allow-write --allow-net --allow-run",
+    "test:core": "deno test src/core/prompts.ts src/core/xdg.ts src/core/auth.ts src/core/preferences.ts --allow-env --allow-read --allow-write",
+    "test:cli": "deno test src/cli/auth.ts src/cli/input.ts src/cli/mcp.ts src/cli/modes.ts src/cli/parser.ts src/cli/model-selector.ts src/cli/toolset-selector.ts src/cli/conf.ts --allow-env --allow-read --allow-write",
+    "test:ui": "deno test src/ui/console.ts src/ui/styles.ts src/ui/terminal.ts --allow-env --allow-read --allow-write",
+    "test:api": "deno test src/api/gemini.ts --allow-env --allow-read --allow-write --allow-net"
   },
   "imports": {
     "@google/genai": "npm:@google/genai@^1.0.1",
