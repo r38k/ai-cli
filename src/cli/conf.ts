@@ -33,7 +33,6 @@ import {
 import { getDefaultModel } from "../api/model.ts";
 import { getDefaultToolset } from "../core/preferences.ts";
 import { getXdgConfigDir, getXdgDataDir } from "../core/xdg.ts";
-import { join } from "jsr:@std/path";
 
 /**
  * 設定表示のメインコマンド
