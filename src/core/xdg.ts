@@ -28,19 +28,30 @@ import { join } from "jsr:@std/path";
 const APP_NAME = "ai-cli";
 
 /**
- * XDG設定ディレクトリを取得
- * @returns $XDG_CONFIG_HOME/ai-cli または ~/.config/ai-cli
+ * XDGディレクトリの汎用リゾルバー
+ * @param envVar - 環境変数名 (例: "XDG_CONFIG_HOME")
+ * @param defaultPath - デフォルトパス (例: [".config"])
+ * @returns 解決されたディレクトリパス
  */
-export function getXdgConfigDir(): string {
-  const xdgConfigHome = Deno.env.get("XDG_CONFIG_HOME");
+function resolveXdgDirectory(envVar: string, defaultPath: string[]): string {
+  const xdgDir = Deno.env.get(envVar);
   const homeDir = Deno.env.get("HOME") || Deno.env.get("USERPROFILE");
 
   if (!homeDir) {
     throw new Error("ホームディレクトリが見つかりません");
   }
 
-  const baseDir = xdgConfigHome || join(homeDir, ".config");
+  const baseDir = xdgDir || join(homeDir, ...defaultPath);
+  
   return join(baseDir, APP_NAME);
+}
+
+/**
+ * XDG設定ディレクトリを取得
+ * @returns $XDG_CONFIG_HOME/ai-cli または ~/.config/ai-cli
+ */
+export function getXdgConfigDir(): string {
+  return resolveXdgDirectory("XDG_CONFIG_HOME", [".config"]);
 }
 
 /**
@@ -48,15 +59,7 @@ export function getXdgConfigDir(): string {
  * @returns $XDG_DATA_HOME/ai-cli または ~/.local/share/ai-cli
  */
 export function getXdgDataDir(): string {
-  const xdgDataHome = Deno.env.get("XDG_DATA_HOME");
-  const homeDir = Deno.env.get("HOME") || Deno.env.get("USERPROFILE");
-
-  if (!homeDir) {
-    throw new Error("ホームディレクトリが見つかりません");
-  }
-
-  const baseDir = xdgDataHome || join(homeDir, ".local", "share");
-  return join(baseDir, APP_NAME);
+  return resolveXdgDirectory("XDG_DATA_HOME", [".local", "share"]);
 }
 
 /**
@@ -64,15 +67,7 @@ export function getXdgDataDir(): string {
  * @returns $XDG_CACHE_HOME/ai-cli または ~/.cache/ai-cli
  */
 export function getXdgCacheDir(): string {
-  const xdgCacheHome = Deno.env.get("XDG_CACHE_HOME");
-  const homeDir = Deno.env.get("HOME") || Deno.env.get("USERPROFILE");
-
-  if (!homeDir) {
-    throw new Error("ホームディレクトリが見つかりません");
-  }
-
-  const baseDir = xdgCacheHome || join(homeDir, ".cache");
-  return join(baseDir, APP_NAME);
+  return resolveXdgDirectory("XDG_CACHE_HOME", [".cache"]);
 }
 
 /**
