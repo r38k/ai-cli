@@ -158,7 +158,7 @@ export async function* generateText(
   // プロバイダーに応じてクライアントを初期化
   const provider = await getProvider();
   let client: GoogleGenAI;
-  
+
   if (provider === "vertex-ai") {
     const vertexConfig = await getVertexConfig();
     if (!vertexConfig) {
@@ -166,12 +166,12 @@ export async function* generateText(
         "Vertex AI設定がありません。'ai auth' コマンドで設定してください。",
       );
     }
-    
+
     client = new GoogleGenAI({
       vertexai: true,
       project: vertexConfig.project,
       location: vertexConfig.location,
-      apiVersion: 'v1',
+      apiVersion: "v1",
     });
   } else {
     // Gemini APIモード
@@ -181,7 +181,7 @@ export async function* generateText(
         "APIキーが設定されていません。'ai auth' コマンドで認証してください。",
       );
     }
-    
+
     client = new GoogleGenAI({
       apiKey: apiKey,
     });
@@ -309,7 +309,7 @@ if (import.meta.main) {
   try {
     const provider = await getProvider();
     console.log(`プロバイダー: ${provider || "未設定"}`);
-    
+
     if (provider === "vertex-ai") {
       const vertexConfig = await getVertexConfig();
       if (vertexConfig) {
@@ -327,7 +327,7 @@ if (import.meta.main) {
         console.log("✗ APIキーが設定されていません");
       }
     }
-    
+
     if (!provider) {
       console.log("  'ai auth' コマンドで認証してください");
     }

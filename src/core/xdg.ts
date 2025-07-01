@@ -42,7 +42,6 @@ function resolveXdgDirectory(envVar: string, defaultPath: string[]): string {
   }
 
   const baseDir = xdgDir || join(homeDir, ...defaultPath);
-  
   return join(baseDir, APP_NAME);
 }
 
